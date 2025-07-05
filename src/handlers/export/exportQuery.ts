@@ -1,45 +1,23 @@
-import { z } from 'zod';
-import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { MetabaseApiClient } from '../api.js';
-import { ErrorCode, McpError } from '../types/core.js';
-import { handleApiError } from '../utils.js';
-import { config, authMethod, AuthMethod } from '../config.js';
-import { sanitizeFilename } from '../utils.js';
+import { MetabaseApiClient } from '../../api.js';
+import { handleApiError, sanitizeFilename } from '../../utils/index.js';
+import { config, authMethod, AuthMethod } from '../../config.js';
+import { SqlExportParams, ExportResponse } from './types.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
-export async function handleExportQuery(
-  request: z.infer<typeof CallToolRequestSchema>,
+export async function exportSqlQuery(
+  params: SqlExportParams,
   requestId: string,
   apiClient: MetabaseApiClient,
   logDebug: (message: string, data?: unknown) => void,
   logInfo: (message: string, data?: unknown) => void,
   logWarn: (message: string, data?: unknown, error?: Error) => void,
   logError: (message: string, error: unknown) => void
-) {
-  const databaseId = request.params?.arguments?.database_id as number;
-  const query = request.params?.arguments?.query as string;
-  const format = (request.params?.arguments?.format as string) || 'csv';
-  const nativeParameters = request.params?.arguments?.native_parameters || [];
-  const customFilename = request.params?.arguments?.filename as string;
+): Promise<ExportResponse> {
+  const { databaseId, query, nativeParameters, format, filename } = params;
 
-  if (!databaseId) {
-    logWarn('Missing database_id parameter in export_query request', { requestId });
-    throw new McpError(ErrorCode.InvalidParams, 'Database ID parameter is required');
-  }
-
-  if (!query) {
-    logWarn('Missing query parameter in export_query request', { requestId });
-    throw new McpError(ErrorCode.InvalidParams, 'SQL query parameter is required');
-  }
-
-  if (!['csv', 'json', 'xlsx'].includes(format)) {
-    logWarn(`Invalid format parameter in export_query request: ${format}`, { requestId });
-    throw new McpError(ErrorCode.InvalidParams, 'Format must be one of: csv, json, xlsx');
-  }
-
-  logDebug(`Exporting query in ${format} format from database ID: ${databaseId}`);
+  logDebug(`Exporting SQL query in ${format} format from database ID: ${databaseId}`);
 
   try {
     // Build query request body according to Metabase export API requirements
@@ -160,13 +138,13 @@ export async function handleExportQuery(
 
     // Always save files to Downloads/Metabase directory
     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const sanitizedCustomFilename = sanitizeFilename(customFilename);
+    const sanitizedCustomFilename = sanitizeFilename(filename);
     const baseFilename = sanitizedCustomFilename || `metabase_export_${timestamp}`;
-    const filename = `${baseFilename}.${format}`;
+    const finalFilename = `${baseFilename}.${format}`;
 
     // Create Metabase subdirectory in Downloads
     const downloadsPath = path.join(os.homedir(), 'Downloads', 'Metabase');
-    const savedFilePath = path.join(downloadsPath, filename);
+    const savedFilePath = path.join(downloadsPath, finalFilename);
 
     let fileSaveError: string | undefined;
 
@@ -236,7 +214,7 @@ export async function handleExportQuery(
       message: 'Export completed successfully',
       query: query,
       file_path: savedFilePath,
-      filename: filename,
+      filename: finalFilename,
       format: format,
       row_count: rowCount,
       database_id: databaseId,

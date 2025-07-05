@@ -6,7 +6,7 @@ import {
   CallToolRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { LogLevel } from './config.js';
-import { generateRequestId } from './utils.js';
+import { generateRequestId } from './utils/index.js';
 import {
   ErrorCode,
   McpError,
@@ -18,8 +18,8 @@ import { MetabaseApiClient } from './api.js';
 import {
   handleList,
   handleExecute,
+  handleExport,
   handleSearch,
-  handleExportQuery,
   handleClearCache,
   handleRetrieve,
 } from './handlers/index.js';
@@ -280,7 +280,7 @@ export class MetabaseServer {
           {
             name: 'search',
             description:
-              '[RECOMMENDED] Search across all Metabase items using native search API. Supports cards, dashboards, tables, collections, databases, and more. Use this FIRST for finding any Metabase content. Returns search metrics, recommendations, and clean results organized by model type.',
+              'Search across all Metabase items using native search API. Supports cards, dashboards, tables, collections, databases, and more. Use this first for finding any Metabase content. Returns search metrics, recommendations, and clean results organized by model type.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -354,7 +354,7 @@ export class MetabaseServer {
           {
             name: 'retrieve',
             description:
-              '[RECOMMENDED] Fetch additional details for supported models (Cards, Dashboards, Tables, Databases, Collections, Fields). Supports multiple IDs (max 50 per request) with intelligent concurrent processing and optimized caching.',
+              'Fetch additional details for supported models (Cards, Dashboards, Tables, Databases, Collections, Fields). Supports multiple IDs (max 50 per request) with intelligent concurrent processing and optimized caching.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -382,7 +382,7 @@ export class MetabaseServer {
           {
             name: 'list',
             description:
-              '[RECOMMENDED] Fetch ALL records for a single Metabase resource type with highly optimized responses for overview purposes. Retrieves complete lists of cards, dashboards, tables, databases, or collections. Returns only essential identifier fields for efficient browsing and includes intelligent caching for performance.',
+              'Fetch all records for a single Metabase resource type with highly optimized responses for overview purposes. Retrieves complete lists of cards, dashboards, tables, databases, or collections. Returns only essential identifier fields for efficient browsing and includes intelligent caching for performance.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -399,7 +399,7 @@ export class MetabaseServer {
           {
             name: 'execute',
             description:
-              'Execute SQL queries or run saved cards against Metabase databases. Use Card mode when existing cards have the needed filters. Use SQL mode for custom queries or when cards lack required filters.',
+              'Unified command to execute SQL queries or run saved cards against Metabase databases. Use Card mode when existing cards have the needed filters. Use SQL mode for custom queries or when cards lack required filters. Returns up to 2000 rows per request.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -424,7 +424,8 @@ export class MetabaseServer {
                 card_parameters: {
                   type: 'array',
                   items: { type: 'object' },
-                  description: 'Parameters for card execution (card mode only)',
+                  description:
+                    'Parameters for filtering card results (card mode only). Each parameter must follow Metabase format: {id: "uuid", slug: "param_name", target: ["dimension", ["template-tag", "param_name"]], type: "param_type", value: "param_value"}',
                 },
                 row_limit: {
                   type: 'number',
@@ -435,32 +436,38 @@ export class MetabaseServer {
                 },
               },
               required: [],
-              oneOf: [
-                {
-                  required: ['database_id', 'query'],
-                  description: 'SQL mode: provide database_id and query',
-                },
-                {
-                  required: ['card_id'],
-                  description: 'Card mode: provide card_id',
-                },
-              ],
             },
           },
           {
-            name: 'export_query',
+            name: 'export',
             description:
-              '[ADVANCED] Export large SQL query results using Metabase export endpoints (supports up to 1M rows). Returns data in specified format (CSV, JSON, or XLSX) and automatically saves to Downloads/Metabase folder.',
+              'Unified command to export large SQL query results or saved cards using Metabase export endpoints (supports up to 1M rows). Returns data in specified format (CSV, JSON, or XLSX) and automatically saves to Downloads/Metabase folder.',
             inputSchema: {
               type: 'object',
               properties: {
                 database_id: {
                   type: 'number',
-                  description: 'ID of the database to query',
+                  description: 'Database ID to export query from (SQL mode only)',
                 },
                 query: {
                   type: 'string',
-                  description: 'SQL query to execute and export',
+                  description: 'SQL query to execute and export (SQL mode only)',
+                },
+                card_id: {
+                  type: 'number',
+                  description: 'ID of saved card to export (card mode only)',
+                },
+                native_parameters: {
+                  type: 'array',
+                  items: { type: 'object' },
+                  description:
+                    'Parameters for SQL template variables like {{variable_name}} (SQL mode only)',
+                },
+                card_parameters: {
+                  type: 'array',
+                  items: { type: 'object' },
+                  description:
+                    'Parameters for filtering card results before export (card mode only). Each parameter must follow Metabase format: {id: "uuid", slug: "param_name", target: ["dimension", ["template-tag", "param_name"]], type: "param_type", value: "param_value"}',
                 },
                 format: {
                   type: 'string',
@@ -469,26 +476,19 @@ export class MetabaseServer {
                     'Export format: csv (text), json (structured data), or xlsx (Excel file)',
                   default: 'csv',
                 },
-                native_parameters: {
-                  type: 'array',
-                  description: 'Optional parameters for the query',
-                  items: {
-                    type: 'object',
-                  },
-                },
                 filename: {
                   type: 'string',
                   description:
                     'Custom filename (without extension) for the saved file. If not provided, a timestamp-based name will be used.',
                 },
               },
-              required: ['database_id', 'query'],
+              required: [],
             },
           },
           {
             name: 'clear_cache',
             description:
-              '[UTILITY] Clear the internal cache for stored data. Useful for debugging or when you know the data has changed. Supports granular cache clearing for both individual items and list caches.',
+              'Clear the internal cache for stored data. Useful for debugging or when you know the data has changed. Supports granular cache clearing for both individual items and list caches.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -567,8 +567,8 @@ export class MetabaseServer {
               this.logWarn.bind(this),
               this.logError.bind(this)
             );
-          case 'export_query':
-            return handleExportQuery(
+          case 'export':
+            return handleExport(
               request,
               requestId,
               this.apiClient,

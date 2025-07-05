@@ -2,8 +2,7 @@ import { z } from 'zod';
 import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { MetabaseApiClient } from '../../api.js';
 import { ErrorCode, McpError } from '../../types/core.js';
-import { handleApiError } from '../../utils.js';
-import { SupportedListModel } from './types.js';
+import { handleApiError, validateEnumValue } from '../../utils/index.js';
 import {
   optimizeCardForList,
   optimizeDashboardForList,
@@ -32,23 +31,12 @@ export async function handleList(
     );
   }
 
-  // Validate model type
-  const supportedModels: SupportedListModel[] = [
-    'cards',
-    'dashboards',
-    'tables',
-    'databases',
-    'collections',
-  ];
-  if (!supportedModels.includes(model as SupportedListModel)) {
-    logWarn(`Invalid model type: ${model}`, { requestId });
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      `Invalid model type: ${model}. Supported models: ${supportedModels.join(', ')}`
-    );
-  }
+  // Validate model type with case insensitive handling
+  const supportedModels = ['cards', 'dashboards', 'tables', 'databases', 'collections'] as const;
 
-  logDebug(`Listing ${model} from Metabase`);
+  const validatedModel = validateEnumValue(model, supportedModels, 'model', requestId, logWarn);
+
+  logDebug(`Listing ${validatedModel} from Metabase`);
 
   try {
     const startTime = Date.now();
@@ -57,7 +45,7 @@ export async function handleList(
     let dataSource: 'cache' | 'api';
     let fetchTime: number;
 
-    switch (model as SupportedListModel) {
+    switch (validatedModel) {
       case 'cards': {
         optimizeFunction = optimizeCardForList;
         const cardsResponse = await apiClient.getCardsList();
@@ -99,11 +87,11 @@ export async function handleList(
         break;
       }
       default:
-        throw new Error(`Unsupported model: ${model}`);
+        throw new Error(`Unsupported model: ${validatedModel}`);
     }
 
     logDebug(
-      `Fetching ${model} from ${dataSource} (${dataSource === 'api' ? 'fresh data' : 'cached data'})`
+      `Fetching ${validatedModel} from ${dataSource} (${dataSource === 'api' ? 'fresh data' : 'cached data'})`
     );
 
     // Optimize each item for list view
@@ -111,12 +99,12 @@ export async function handleList(
     const totalItems = optimizedItems.length;
     const totalTime = Date.now() - startTime;
 
-    logDebug(`Successfully fetched ${optimizedItems.length} ${model}`);
+    logDebug(`Successfully fetched ${optimizedItems.length} ${validatedModel}`);
 
     // Create response object
     const response: any = {
       request_id: requestId,
-      model: model,
+      model: validatedModel,
       total_items: totalItems,
       data_source: {
         source: dataSource,
@@ -134,14 +122,14 @@ export async function handleList(
       results: optimizedItems,
     };
 
-    response.message = `Successfully listed ${totalItems} ${model} (source: ${dataSource}).`;
+    response.message = `Successfully listed ${totalItems} ${validatedModel} (source: ${dataSource}).`;
 
     // Add usage guidance
     response.usage_guidance =
       'This list provides an overview of available items. Use retrieve() with specific model types and IDs to get detailed information for further operations like execute_query.';
 
     // Add model-specific recommendation
-    switch (model as SupportedListModel) {
+    switch (validatedModel) {
       case 'cards':
         response.recommendation =
           'Use retrieve(model="card", ids=[...]) to get SQL queries and execute them with execute_query()';
@@ -164,7 +152,7 @@ export async function handleList(
         break;
     }
 
-    logInfo(`Successfully listed ${totalItems} ${model}`);
+    logInfo(`Successfully listed ${totalItems} ${validatedModel}`);
 
     return {
       content: [
@@ -178,12 +166,12 @@ export async function handleList(
     throw handleApiError(
       error,
       {
-        operation: `List ${model}`,
-        resourceType: model,
+        operation: `List ${validatedModel}`,
+        resourceType: validatedModel,
         customMessages: {
           '400': `Invalid list parameters. Ensure model type is valid.`,
-          '404': `List endpoint not found for ${model}. Check that the model type is supported.`,
-          '500': `Metabase server error while listing ${model}. The server may be experiencing issues.`,
+          '404': `List endpoint not found for ${validatedModel}. Check that the model type is supported.`,
+          '500': `Metabase server error while listing ${validatedModel}. The server may be experiencing issues.`,
         },
       },
       logError

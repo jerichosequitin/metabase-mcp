@@ -2,13 +2,13 @@ import { z } from 'zod';
 import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { MetabaseApiClient, CachedResponse } from '../../api.js';
 import { ErrorCode, McpError } from '../../types/core.js';
-import { handleApiError, saveRawStructure } from '../../utils.js';
 import {
-  SupportedModel,
-  MAX_IDS_PER_REQUEST,
-  CONCURRENCY_LIMITS,
-  SAVE_RAW_STRUCTURES,
-} from './types.js';
+  handleApiError,
+  saveRawStructure,
+  validatePositiveInteger,
+  validateEnumValue,
+} from '../../utils/index.js';
+import { MAX_IDS_PER_REQUEST, CONCURRENCY_LIMITS, SAVE_RAW_STRUCTURES } from './types.js';
 import {
   optimizeCardResponse,
   optimizeDashboardResponse,
@@ -57,37 +57,26 @@ export async function handleRetrieve(
     );
   }
 
-  // Validate model type
-  const supportedModels: SupportedModel[] = [
+  // Validate model type with case insensitive handling
+  const supportedModels = [
     'card',
     'dashboard',
     'table',
     'database',
     'collection',
     'field',
-  ];
-  if (!supportedModels.includes(model as SupportedModel)) {
-    logWarn(`Invalid model type: ${model}`, { requestId });
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      `Invalid model type. Must be one of: ${supportedModels.join(', ')}`
-    );
-  }
+  ] as const;
 
-  // Validate all IDs are numbers
+  const validatedModel = validateEnumValue(model, supportedModels, 'model', requestId, logWarn);
+
+  // Validate all IDs are positive integers
   const numericIds: number[] = [];
   for (const id of ids) {
-    if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) {
-      logWarn(`Invalid ID: ${id}. All IDs must be positive integers`, { requestId });
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `Invalid ID: ${id}. All IDs must be positive integers`
-      );
-    }
-    numericIds.push(id);
+    validatePositiveInteger(id, 'id', requestId, logWarn);
+    numericIds.push(id as number);
   }
 
-  logDebug(`Retrieving ${model} details for IDs: ${numericIds.join(', ')}`);
+  logDebug(`Retrieving ${validatedModel} details for IDs: ${numericIds.join(', ')}`);
 
   try {
     const startTime = Date.now();
@@ -108,7 +97,7 @@ export async function handleRetrieve(
           : CONCURRENCY_LIMITS.LARGE_BATCH_SIZE;
 
     logDebug(
-      `Processing ${numericIds.length} ${model}(s) with concurrency limit: ${CONCURRENT_LIMIT}`
+      `Processing ${numericIds.length} ${validatedModel}(s) with concurrency limit: ${CONCURRENT_LIMIT}`
     );
 
     // Process requests concurrently with controlled concurrency to balance performance and server load
@@ -116,7 +105,7 @@ export async function handleRetrieve(
       try {
         let response: CachedResponse<any>;
 
-        switch (model as SupportedModel) {
+        switch (validatedModel) {
           case 'card':
             response = await apiClient.getCard(id);
             break;
@@ -145,37 +134,37 @@ export async function handleRetrieve(
         }
 
         // Save raw structure for documentation if enabled
-        saveRawStructure(model as SupportedModel, response.data, SAVE_RAW_STRUCTURES);
+        saveRawStructure(validatedModel, response.data, SAVE_RAW_STRUCTURES);
 
         let result: any;
 
         // Optimize responses to reduce token usage
-        if (model === 'card') {
+        if (validatedModel === 'card') {
           result = optimizeCardResponse({
             id,
             ...response.data,
           });
-        } else if (model === 'dashboard') {
+        } else if (validatedModel === 'dashboard') {
           result = optimizeDashboardResponse({
             id,
             ...response.data,
           });
-        } else if (model === 'table') {
+        } else if (validatedModel === 'table') {
           result = optimizeTableResponse({
             id,
             ...response.data,
           });
-        } else if (model === 'database') {
+        } else if (validatedModel === 'database') {
           result = optimizeDatabaseResponse({
             id,
             ...response.data,
           });
-        } else if (model === 'collection') {
+        } else if (validatedModel === 'collection') {
           result = optimizeCollectionResponse({
             id,
             ...response.data,
           });
-        } else if (model === 'field') {
+        } else if (validatedModel === 'field') {
           result = optimizeFieldResponse({
             id,
             ...response.data,
@@ -188,11 +177,11 @@ export async function handleRetrieve(
           };
         }
 
-        logDebug(`Successfully retrieved ${model} ${id} from ${response.source}`);
+        logDebug(`Successfully retrieved ${validatedModel} ${id} from ${response.source}`);
         return { success: true, id, result };
       } catch (error: any) {
         const errorMessage = error?.message || error?.data?.message || 'Unknown error';
-        logWarn(`Failed to retrieve ${model} ${id}: ${errorMessage}`, { requestId });
+        logWarn(`Failed to retrieve ${validatedModel} ${id}: ${errorMessage}`, { requestId });
         return { success: false, id, error: errorMessage };
       }
     };
@@ -250,7 +239,7 @@ export async function handleRetrieve(
 
     // Create response object
     const response: any = {
-      model,
+      model: validatedModel,
       request_id: requestId,
       total_requested: numericIds.length,
       successful_retrievals: successCount,
@@ -268,9 +257,9 @@ export async function handleRetrieve(
     // Add errors if any occurred
     if (errors.length > 0) {
       response.errors = errors;
-      response.message = `Retrieved ${successCount}/${numericIds.length} ${model}s successfully. ${errorCount} failed.`;
+      response.message = `Retrieved ${successCount}/${numericIds.length} ${validatedModel}s successfully. ${errorCount} failed.`;
     } else {
-      response.message = `Successfully retrieved all ${successCount} ${model}(s).`;
+      response.message = `Successfully retrieved all ${successCount} ${validatedModel}(s).`;
     }
 
     // Add performance info based on data source
@@ -283,7 +272,7 @@ export async function handleRetrieve(
     }
 
     // Add usage guidance based on model type
-    switch (model as SupportedModel) {
+    switch (validatedModel) {
       case 'card':
         response.usage_guidance =
           'Use the database_id and dataset_query.native.query with execute_query to run queries. You can modify the SQL as needed. Response is optimized to include only essential fields for better performance.';
@@ -312,8 +301,8 @@ export async function handleRetrieve(
 
     const logMessage =
       errorCount > 0
-        ? `Retrieved ${successCount}/${numericIds.length} ${model}s (${errorCount} errors, source: ${dataSource.primary_source})`
-        : `Successfully retrieved ${successCount} ${model}s (source: ${dataSource.primary_source})`;
+        ? `Retrieved ${successCount}/${numericIds.length} ${validatedModel}s (${errorCount} errors, source: ${dataSource.primary_source})`
+        : `Successfully retrieved ${successCount} ${validatedModel}s (source: ${dataSource.primary_source})`;
 
     logInfo(logMessage);
 
@@ -329,13 +318,13 @@ export async function handleRetrieve(
     throw handleApiError(
       error,
       {
-        operation: `Retrieve ${model} details`,
-        resourceType: model as string,
+        operation: `Retrieve ${validatedModel} details`,
+        resourceType: validatedModel,
         resourceId: numericIds.join(', '),
         customMessages: {
-          '400': `Invalid ${model} parameters. Ensure all IDs are valid numbers.`,
-          '404': `One or more ${model}s not found. Check that the IDs are correct and the ${model}s exist.`,
-          '500': `Metabase server error while retrieving ${model}s. The server may be experiencing issues.`,
+          '400': `Invalid ${validatedModel} parameters. Ensure all IDs are valid numbers.`,
+          '404': `One or more ${validatedModel}s not found. Check that the IDs are correct and the ${validatedModel}s exist.`,
+          '500': `Metabase server error while retrieving ${validatedModel}s. The server may be experiencing issues.`,
         },
       },
       logError

@@ -77,8 +77,11 @@ describe('handleRetrieve', () => {
       ).rejects.toThrow(McpError);
 
       expect(mockLogger.logWarn).toHaveBeenCalledWith(
-        'Invalid model type: invalid-model',
-        { requestId: 'test-request-id' }
+        'Invalid model parameter: invalid-model',
+        expect.objectContaining({ 
+          requestId: 'test-request-id',
+          validValues: expect.any(Array)
+        })
       );
     });
 
@@ -106,8 +109,11 @@ describe('handleRetrieve', () => {
       ).rejects.toThrow(McpError);
 
       expect(mockLogger.logWarn).toHaveBeenCalledWith(
-        'Invalid ID: 0. All IDs must be positive integers',
-        { requestId: 'test-request-id' }
+        'Invalid id parameter - must be a positive number',
+        expect.objectContaining({ 
+          requestId: 'test-request-id',
+          value: 0
+        })
       );
     });
   });

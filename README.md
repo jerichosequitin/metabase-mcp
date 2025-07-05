@@ -46,15 +46,20 @@ The server exposes the following optimized tools for AI assistants:
   - Includes dashboard questions and native query search
 
 ### Query Execution Tools
-- **`execute_query`**: Execute custom SQL queries (2K row limit)
-  - Enhanced with proper LIMIT clause handling
-  - Improved parameter validation and error handling
+- **`execute`**: Unified command for executing SQL queries or saved cards (2K row limit)
+  - **SQL Mode**: Execute custom SQL queries with database_id and query parameters
+  - **Card Mode**: Execute saved Metabase cards with card_id parameter and optional filtering
+  - **Card Parameters**: Filter card results using `card_parameters` array with name/value pairs
+  - Enhanced with proper LIMIT clause handling and parameter validation
+  - Intelligent mode detection with strict parameter validation
 
-
-- **`export_query`**: Export large datasets (up to 1M rows)
-  - Supports CSV, JSON, and XLSX formats
-  - Automatic file saving with custom naming
-  - Enhanced validation and error handling
+- **`export`**: Unified command for exporting large datasets (up to 1M rows)
+  - **SQL Mode**: Export custom SQL query results with database_id and query parameters
+  - **Card Mode**: Export saved Metabase card results with card_id parameter and optional filtering
+  - **Card Parameters**: Filter card results before export using `card_parameters` array
+  - Supports CSV, JSON, and XLSX formats with case-insensitive format handling
+  - Automatic file saving to ~/Downloads/Metabase/ with custom naming support
+  - Enhanced validation including positive ID validation
 
 ### Utility Tools
 - **`clear_cache`**: Clear internal cache with granular control
@@ -321,40 +326,138 @@ search({
 })
 ```
 
-### Enhanced Query Workflow
+### Query Execution Workflow
 
-#### Extract and Modify SQL Queries
+#### Card Parameters Format
+When using card mode for both `execute` and `export` commands, you can filter results using the `card_parameters` array. Each parameter follows Metabase's internal parameter structure:
+
 ```javascript
-// 1. Get SQL from existing card (with caching)
-get_card_sql({ card_id: 42 })
+{
+  "id": "parameter-uuid",           // UUID of the parameter
+  "slug": "parameter_name",         // Parameter name/slug
+  "target": ["dimension", ["template-tag", "parameter_name"]], // Target definition
+  "type": "parameter_type",         // Parameter type (id, text, date/all-options, etc.)
+  "value": "parameter_value"        // The actual filter value
+}
+```
 
-// 2. Execute with modifications
-execute_query({
+**Examples of valid parameter formats:**
+
+**ID Parameter:**
+```javascript
+{
+  "id": "b86c100e-87cb-09d6-7c33-e58cd2cdbcb2",
+  "slug": "user_id",
+  "target": ["dimension", ["template-tag", "user_id"]],
+  "type": "id",
+  "value": "12345"
+}
+```
+
+**Date Range Parameter:**
+```javascript
+{
+  "id": "1646c8b5-b9fb-32db-c198-7685b3f793d8",
+  "slug": "date_range",
+  "target": ["dimension", ["template-tag", "date_range"]],
+  "type": "date/all-options",
+  "value": "2025-01-01~2025-12-31"
+}
+```
+
+**Text Parameter:**
+```javascript
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "slug": "status",
+  "target": ["dimension", ["template-tag", "status"]],
+  "type": "text",
+  "value": "active"
+}
+```
+
+> **Note**: To get the correct parameter structure for a specific card, you can first retrieve the card details using the `retrieve` command with the card ID, which will show you the parameter definitions including their IDs, types, and expected formats.
+
+#### Execute SQL Queries or Cards
+```javascript
+// Execute custom SQL query
+execute({
   database_id: 1,
-  query: "SELECT * FROM users WHERE created_at > '2024-01-01' LIMIT 1000",
+  query: "SELECT * FROM users WHERE created_at > '2024-01-01'",
   row_limit: 500
+})
+
+// Execute saved card with filtering parameters
+execute({
+  card_id: 42,
+  card_parameters: [
+    {
+      "id": "1646c8b5-b9fb-32db-c198-7685b3f793d8",
+      "slug": "start_date", 
+      "target": ["dimension", ["template-tag", "start_date"]],
+      "type": "date/all-options",
+      "value": "2024-01-01~2024-12-31"
+    },
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "slug": "status",
+      "target": ["dimension", ["template-tag", "status"]],
+      "type": "text",
+      "value": "active"
+    },
+    {
+      "id": "b86c100e-87cb-09d6-7c33-e58cd2cdbcb2", 
+      "slug": "department_id",
+      "target": ["dimension", ["template-tag", "department_id"]],
+      "type": "id",
+      "value": "123"
+    }
+  ],
+  row_limit: 1000
 })
 ```
 
 #### Export Large Datasets
 ```javascript
-// Export as CSV with auto-save
-export_query({
+// Export SQL query as CSV with auto-save
+export({
   database_id: 1,
   query: "SELECT * FROM large_table",
-  format: "csv",
+  format: "csv",  // Case-insensitive: "CSV", "Csv" also work
   filename: "large_export"
 })
 
-// Export as Excel file
-export_query({
-  database_id: 1,
-  query: "SELECT * FROM sales_data WHERE date >= '2024-01-01'",
-  format: "xlsx"
+// Export saved card as Excel file with filtering parameters
+export({
+  card_id: 123,
+  card_parameters: [
+    {
+      "id": "f1e2d3c4-b5a6-9870-cdef-123456789abc",
+      "slug": "year",
+      "target": ["dimension", ["template-tag", "year"]], 
+      "type": "number",
+      "value": "2024"
+    },
+    {
+      "id": "a9b8c7d6-e5f4-3210-9876-fedcba987654",
+      "slug": "region",
+      "target": ["dimension", ["template-tag", "region"]],
+      "type": "text", 
+      "value": "North America"
+    },
+    {
+      "id": "1a2b3c4d-5e6f-7890-abcd-ef1234567890",
+      "slug": "min_amount",
+      "target": ["dimension", ["template-tag", "min_amount"]],
+      "type": "number",
+      "value": "1000"
+    }
+  ],
+  format: "XLSX"  // Case-insensitive format handling
 })
 
 // Export as JSON for API integration
-export_query({
+export({
   database_id: 1,
   query: "SELECT id, name, email FROM users",
   format: "json"

@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { MetabaseApiClient } from '../api.js';
-import { ErrorCode, McpError } from '../types/core.js';
-import { handleApiError } from '../utils.js';
+import { handleApiError, validateEnumValue } from '../utils/index.js';
 
 export function handleClearCache(
   request: z.infer<typeof CallToolRequestSchema>,
@@ -11,9 +10,9 @@ export function handleClearCache(
   logWarn: (message: string, data?: unknown, error?: Error) => void,
   logError: (message: string, error: unknown) => void
 ) {
-  const cacheType = (request.params?.arguments?.cache_type as string) || 'all';
+  const requestId = 'clearCache'; // Generate a simple request ID for logging
 
-  // Validate cache_type parameter
+  // Validate cache_type parameter with case insensitive handling
   const validCacheTypes = [
     'all',
     'cards',
@@ -29,14 +28,15 @@ export function handleClearCache(
     'collections-list',
     'all-lists',
     'all-individual',
-  ];
-  if (!validCacheTypes.includes(cacheType)) {
-    logWarn(`Invalid cache_type parameter: ${cacheType}`, { validTypes: validCacheTypes });
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      `Invalid cache_type: ${cacheType}. Valid types are: ${validCacheTypes.join(', ')}`
-    );
-  }
+  ] as const;
+
+  const cacheType = validateEnumValue(
+    request.params?.arguments?.cache_type || 'all',
+    validCacheTypes,
+    'cache_type',
+    requestId,
+    logWarn
+  );
 
   try {
     let message = '';

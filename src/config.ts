@@ -44,8 +44,25 @@ function validateEnvironment() {
   }
 }
 
-// Export validated configuration
-export const config = validateEnvironment();
+// Create default test config for test environment
+function createTestConfig() {
+  return {
+    METABASE_URL: 'http://localhost:3000',
+    METABASE_API_KEY: 'test-api-key',
+    METABASE_USER_EMAIL: undefined,
+    METABASE_PASSWORD: undefined,
+    NODE_ENV: 'test' as const,
+    LOG_LEVEL: 'info' as const,
+    CACHE_TTL_MS: 600000,
+    REQUEST_TIMEOUT_MS: 600000,
+  };
+}
+
+// Export validated configuration or test config
+export const config =
+  process.env.NODE_ENV === 'test' || process.env.VITEST
+    ? createTestConfig()
+    : validateEnvironment();
 
 // Authentication method enum
 export enum AuthMethod {

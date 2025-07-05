@@ -48,8 +48,11 @@ describe('handleList', () => {
       ).rejects.toThrow(McpError);
 
       expect(mockLogger.logWarn).toHaveBeenCalledWith(
-        'Invalid model type: invalid-model',
-        { requestId: 'test-request-id' }
+        'Invalid model parameter: invalid-model',
+        expect.objectContaining({ 
+          requestId: 'test-request-id',
+          validValues: expect.any(Array)
+        })
       );
     });
 

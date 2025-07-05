@@ -27,7 +27,10 @@ describe('handleClearCache', () => {
 
       expect(mockLogger.logWarn).toHaveBeenCalledWith(
         'Invalid cache_type parameter: invalid',
-        expect.objectContaining({ validTypes: expect.any(Array) })
+        expect.objectContaining({ 
+          requestId: 'clearCache',
+          validValues: expect.any(Array) 
+        })
       );
     });
   });

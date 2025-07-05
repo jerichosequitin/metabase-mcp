@@ -191,6 +191,152 @@ describe('handleExecute (execute command)', () => {
     });
   });
 
+  describe('Card parameter validation', () => {
+    it('should throw error when card_parameters has invalid format - missing required fields', async () => {
+      const request = createMockRequest('execute', {
+        card_id: 1,
+        card_parameters: [
+          { id: 'test-id', slug: 'test-param' } // missing target, type, value
+        ]
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      await expect(
+        handleExecute(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        expect.stringContaining('Missing required field \'target\''),
+        expect.objectContaining({ requestId: 'test-request-id' })
+      );
+    });
+
+    it('should throw error when card_parameters has invalid target structure', async () => {
+      const request = createMockRequest('execute', {
+        card_id: 1,
+        card_parameters: [
+          {
+            id: 'test-id',
+            slug: 'test-param',
+            target: ['dimension'], // missing second element
+            type: 'text',
+            value: 'test-value'
+          }
+        ]
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      await expect(
+        handleExecute(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid \'target\' field'),
+        expect.objectContaining({ requestId: 'test-request-id' })
+      );
+    });
+
+    it('should throw error when card_parameters has invalid value type', async () => {
+      const request = createMockRequest('execute', {
+        card_id: 1,
+        card_parameters: [
+          {
+            id: 'test-id',
+            slug: 'test-param',
+            target: ['dimension', ['template-tag', 'test-param']],
+            type: 'text',
+            value: null // invalid value type
+          }
+        ]
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      await expect(
+        handleExecute(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid \'value\' field'),
+        expect.objectContaining({ requestId: 'test-request-id' })
+      );
+    });
+
+    it('should accept valid card_parameters format', async () => {
+      const request = createMockRequest('execute', {
+        card_id: 1,
+        card_parameters: [
+          {
+            id: 'b86c100e-87cb-09d6-7c33-e58cd2cdbcb2',
+            slug: 'user_id',
+            target: ['dimension', ['template-tag', 'user_id']],
+            type: 'id',
+            value: '12345'
+          },
+          {
+            id: '1646c8b5-b9fb-32db-c198-7685b3f793d8',
+            slug: 'date_range',
+            target: ['dimension', ['template-tag', 'date_range']],
+            type: 'date/all-options',
+            value: '2025-01-01~2025-12-31'
+          }
+        ],
+        row_limit: 100
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      // Mock the card execution
+      mockApiClient.getCard.mockResolvedValueOnce({
+        data: { id: 1, name: 'Test Card' },
+        source: 'api',
+        fetchTime: 100
+      });
+
+      const mockResponse = {
+        "0": { first_name: 'John', last_name: 'Doe' },
+        "1": { first_name: 'Jane', last_name: 'Smith' },
+        data: {
+          rows: [['John', 'Doe'], ['Jane', 'Smith']],
+          cols: [{ name: 'first_name' }, { name: 'last_name' }]
+        }
+      };
+      mockApiClient.request.mockResolvedValueOnce(mockResponse);
+
+      const result = await handleExecute(
+        request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError
+      );
+
+      expect(result.content).toHaveLength(1);
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.success).toBe(true);
+      expect(responseData.card_id).toBe(1);
+    });
+
+    it('should throw error when card_parameters has empty string values', async () => {
+      const request = createMockRequest('execute', {
+        card_id: 1,
+        card_parameters: [
+          {
+            id: 'test-id',
+            slug: 'test-param',
+            target: ['dimension', ['template-tag', 'test-param']],
+            type: 'text',
+            value: '' // empty string
+          }
+        ]
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      await expect(
+        handleExecute(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        expect.stringContaining('string value cannot be empty'),
+        expect.objectContaining({ requestId: 'test-request-id' })
+      );
+    });
+  });
+
   describe('Query execution', () => {
     it('should successfully execute a simple query', async () => {
       mockApiClient.request.mockResolvedValue(sampleQueryResult);

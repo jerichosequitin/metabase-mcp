@@ -114,8 +114,11 @@ describe('handleSearch', () => {
       ).rejects.toThrow(McpError);
 
       expect(mockLogger.logWarn).toHaveBeenCalledWith(
-        'Invalid model types specified: invalid-model',
-        { requestId: 'test-request-id' }
+        'Invalid models[0] parameter: invalid-model',
+        expect.objectContaining({ 
+          requestId: 'test-request-id',
+          validValues: expect.any(Array)
+        })
       );
     });
 

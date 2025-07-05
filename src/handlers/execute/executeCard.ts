@@ -1,17 +1,21 @@
 import { MetabaseApiClient } from '../../api.js';
-import { handleApiError } from '../../utils.js';
+import { handleApiError, validatePositiveInteger } from '../../utils/index.js';
 import { CardExecutionParams, ExecutionResponse } from './types.js';
 
 export async function executeCard(
   params: CardExecutionParams,
-  _requestId: string,
+  requestId: string,
   apiClient: MetabaseApiClient,
   logDebug: (message: string, data?: unknown) => void,
   logInfo: (message: string, data?: unknown) => void,
-  _logWarn: (message: string, data?: unknown, error?: Error) => void,
+  logWarn: (message: string, data?: unknown, error?: Error) => void,
   logError: (message: string, error: unknown) => void
 ): Promise<ExecutionResponse> {
   const { cardId, cardParameters, rowLimit } = params;
+
+  // Validate positive integer parameters
+  validatePositiveInteger(cardId, 'card_id', requestId, logWarn);
+  validatePositiveInteger(rowLimit, 'row_limit', requestId, logWarn);
 
   logDebug(`Executing card ID: ${cardId} with row limit: ${rowLimit}`);
 
