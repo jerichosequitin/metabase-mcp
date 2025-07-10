@@ -4,16 +4,14 @@ import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
   CallToolRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
-import { LogLevel, authMethod, AuthMethod } from './config.js';
-import { generateRequestId } from './utils/index.js';
-import {
-  ErrorCode,
-  McpError,
-  ApiError,
   ListResourceTemplatesRequestSchema,
   ListToolsRequestSchema,
-} from './types/core.js';
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
+import { LogLevel } from './config.js';
+import { generateRequestId } from './utils/index.js';
+import { ErrorCode, McpError, ApiError } from './types/core.js';
 import { MetabaseApiClient } from './api.js';
 import {
   handleList,
@@ -23,25 +21,28 @@ import {
   handleClearCache,
   handleRetrieve,
 } from './handlers/index.js';
+import {
+  handleListResources,
+  handleListResourceTemplates,
+  handleReadResource,
+} from './handlers/resources/index.js';
+import { handleListPrompts, handleGetPrompt } from './handlers/prompts/index.js';
 
 export class MetabaseServer {
   private server: Server;
   private apiClient: MetabaseApiClient;
 
   constructor() {
-    // Generate server name based on authentication method for proper DXT handling
-    const serverName =
-      authMethod === AuthMethod.API_KEY ? 'metabase-mcp-api-key' : 'metabase-mcp-session';
-
     this.server = new Server(
       {
-        name: serverName,
+        name: 'metabase-mcp',
         version: '1.0.0',
       },
       {
         capabilities: {
           resources: {},
           tools: {},
+          prompts: {},
         },
       }
     );
@@ -50,6 +51,7 @@ export class MetabaseServer {
 
     this.setupResourceHandlers();
     this.setupToolHandlers();
+    this.setupPromptHandlers();
 
     // Enhanced error handling with logging
     this.server.onerror = (error: Error) => {
@@ -127,149 +129,28 @@ export class MetabaseServer {
    * Set up resource handlers
    */
   private setupResourceHandlers() {
-    this.server.setRequestHandler(ListResourcesRequestSchema, async _request => {
-      this.logInfo('Processing request to list resources', { requestId: generateRequestId() });
-      await this.apiClient.getSessionToken();
-
-      try {
-        // Get dashboard list using caching method
-        this.logDebug('Fetching dashboards from Metabase');
-        const dashboardsResponse = await this.apiClient.getDashboardsList();
-
-        const resourceCount = dashboardsResponse.data.length;
-        this.logInfo(
-          `Successfully retrieved ${resourceCount} dashboards from Metabase (source: ${dashboardsResponse.source})`
-        );
-
-        // Return dashboards as resources
-        return {
-          resources: dashboardsResponse.data.map((dashboard: any) => ({
-            uri: `metabase://dashboard/${dashboard.id}`,
-            mimeType: 'application/json',
-            name: dashboard.name,
-            description: `Metabase dashboard: ${dashboard.name}`,
-          })),
-        };
-      } catch (error) {
-        this.logError('Failed to retrieve dashboards from Metabase', error);
-        throw new McpError(ErrorCode.InternalError, 'Failed to retrieve Metabase resources');
-      }
+    this.server.setRequestHandler(ListResourcesRequestSchema, async request => {
+      return handleListResources(
+        request,
+        this.apiClient,
+        this.logInfo.bind(this),
+        this.logError.bind(this)
+      );
     });
 
-    // Resource templates
-    this.server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
-      this.logInfo('Processing request to list resource templates');
-      return {
-        resourceTemplates: [
-          {
-            uriTemplate: 'metabase://dashboard/{id}',
-            name: 'Dashboard by ID',
-            mimeType: 'application/json',
-            description: 'Get a Metabase dashboard by its ID',
-          },
-          {
-            uriTemplate: 'metabase://card/{id}',
-            name: 'Card by ID',
-            mimeType: 'application/json',
-            description: 'Get a Metabase question/card by its ID',
-          },
-          {
-            uriTemplate: 'metabase://database/{id}',
-            name: 'Database by ID',
-            mimeType: 'application/json',
-            description: 'Get a Metabase database by its ID',
-          },
-        ],
-      };
+    this.server.setRequestHandler(ListResourceTemplatesRequestSchema, async request => {
+      return handleListResourceTemplates(request, this.logInfo.bind(this));
     });
 
-    // Read resource
     this.server.setRequestHandler(ReadResourceRequestSchema, async request => {
-      const requestId = generateRequestId();
-      this.logInfo('Processing request to read resource', {
-        requestId,
-        uri: request.params?.uri,
-      });
-
-      await this.apiClient.getSessionToken();
-
-      const uri = request.params?.uri;
-      if (!uri) {
-        this.logWarn('Missing URI parameter in resource request', { requestId });
-        throw new McpError(ErrorCode.InvalidParams, 'URI parameter is required');
-      }
-
-      let match;
-
-      try {
-        // Handle dashboard resource
-        if ((match = uri.match(/^metabase:\/\/dashboard\/(\d+)$/))) {
-          const dashboardId = parseInt(match[1], 10);
-          this.logDebug(`Fetching dashboard with ID: ${dashboardId}`);
-
-          const response = await this.apiClient.getDashboard(dashboardId);
-          this.logInfo(
-            `Successfully retrieved dashboard: ${response.data.name || dashboardId} (source: ${response.source})`
-          );
-
-          return {
-            contents: [
-              {
-                uri: request.params?.uri,
-                mimeType: 'application/json',
-                text: JSON.stringify(response.data, null, 2),
-              },
-            ],
-          };
-        } else if ((match = uri.match(/^metabase:\/\/card\/(\d+)$/))) {
-          // Handle question/card resource
-          const cardId = parseInt(match[1], 10);
-          this.logDebug(`Fetching card/question with ID: ${cardId}`);
-
-          const response = await this.apiClient.getCard(cardId);
-          this.logInfo(
-            `Successfully retrieved card: ${response.data.name || cardId} (source: ${response.source})`
-          );
-
-          return {
-            contents: [
-              {
-                uri: request.params?.uri,
-                mimeType: 'application/json',
-                text: JSON.stringify(response.data, null, 2),
-              },
-            ],
-          };
-        } else if ((match = uri.match(/^metabase:\/\/database\/(\d+)$/))) {
-          // Handle database resource
-          const databaseId = parseInt(match[1], 10);
-          this.logDebug(`Fetching database with ID: ${databaseId}`);
-
-          const response = await this.apiClient.getDatabase(databaseId);
-          this.logInfo(
-            `Successfully retrieved database: ${response.data.name || databaseId} (source: ${response.source})`
-          );
-
-          return {
-            contents: [
-              {
-                uri: request.params?.uri,
-                mimeType: 'application/json',
-                text: JSON.stringify(response.data, null, 2),
-              },
-            ],
-          };
-        } else {
-          this.logWarn(`Invalid URI format: ${uri}`, { requestId });
-          throw new McpError(ErrorCode.InvalidRequest, `Invalid URI format: ${uri}`);
-        }
-      } catch (error) {
-        const apiError = error as ApiError;
-        const errorMessage = apiError.data?.message || apiError.message || 'Unknown error';
-        this.logError(`Failed to fetch Metabase resource: ${errorMessage}`, error);
-
-        throw new McpError(ErrorCode.InternalError, `Metabase API error: ${errorMessage}`);
-      }
+      return handleReadResource(
+        request,
+        this.apiClient,
+        this.logInfo.bind(this),
+        this.logWarn.bind(this),
+        this.logDebug.bind(this),
+        this.logError.bind(this)
+      );
     });
   }
 
@@ -689,6 +570,25 @@ export class MetabaseServer {
         // Create an McpError for consistent error handling
         throw new McpError(ErrorCode.InternalError, `Tool execution failed: ${errorMessage}`);
       }
+    });
+  }
+
+  /**
+   * Set up prompt handlers
+   */
+  private setupPromptHandlers() {
+    this.server.setRequestHandler(ListPromptsRequestSchema, async request => {
+      return handleListPrompts(request, this.logInfo.bind(this));
+    });
+
+    this.server.setRequestHandler(GetPromptRequestSchema, async request => {
+      return handleGetPrompt(
+        request,
+        this.apiClient,
+        this.logInfo.bind(this),
+        this.logWarn.bind(this),
+        this.logError.bind(this)
+      );
     });
   }
 

@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 // MCP Error codes (standard)
 export enum ErrorCode {
   InternalError = 'internal_error',
@@ -107,11 +105,4 @@ export interface ApiError {
   data?: { message?: string };
 }
 
-// Create custom Schema object using z.object
-export const ListResourceTemplatesRequestSchema = z.object({
-  method: z.literal('resources/list_templates'),
-});
-
-export const ListToolsRequestSchema = z.object({
-  method: z.literal('tools/list'),
-});
+// Create custom Schema objects using z.object

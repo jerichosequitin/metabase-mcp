@@ -5,7 +5,6 @@ import * as XLSX from 'xlsx';
 import { SqlExportParams, ExportResponse } from './types.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 
 /**
  * Extract first 5 rows preview in standardized JSON format from export data
@@ -217,16 +216,16 @@ export async function exportSqlQuery(
     const baseFilename = sanitizedCustomFilename || `metabase_export_${timestamp}`;
     const finalFilename = `${baseFilename}.${format}`;
 
-    // Create Metabase subdirectory in Downloads
-    const downloadsPath = path.join(os.homedir(), 'Downloads', 'Metabase');
-    const savedFilePath = path.join(downloadsPath, finalFilename);
+    // Use configured export directory
+    const exportDirectory = config.EXPORT_DIRECTORY;
+    const savedFilePath = path.join(exportDirectory, finalFilename);
 
     let fileSaveError: string | undefined;
 
     try {
-      // Ensure Downloads/Metabase directory exists
-      if (!fs.existsSync(downloadsPath)) {
-        fs.mkdirSync(downloadsPath, { recursive: true });
+      // Ensure export directory exists
+      if (!fs.existsSync(exportDirectory)) {
+        fs.mkdirSync(exportDirectory, { recursive: true });
       }
 
       // Write the file based on format and calculate file size

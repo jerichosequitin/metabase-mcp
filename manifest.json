@@ -1,10 +1,10 @@
 {
   "dxt_version": "0.1",
-  "name": "metabase-mcp-api-key",
+  "name": "metabase-mcp",
   "display_name": "Metabase",
   "version": "1.0.0",
-  "description": "A high-performance MCP server for Metabase analytics data access with intelligent caching and response optimization. Uses API key authentication.",
-  "long_description": "This MCP server provides AI assistants with optimized access to Metabase analytics data. It offers high-performance data retrieval with intelligent caching, response optimization, and comprehensive tools for searching, listing, retrieving, and exporting data from Metabase instances. Features include concurrent processing, pagination support, and export capabilities for large datasets. This version uses API key authentication.",
+  "description": "A high-performance MCP server for Metabase analytics data access with intelligent caching and response optimization.",
+  "long_description": "This MCP server provides AI assistants with optimized access to Metabase analytics data. It offers high-performance data retrieval with intelligent caching, response optimization, and comprehensive tools for searching, listing, retrieving, and exporting data from Metabase instances. Features include concurrent processing, pagination support, and export capabilities for large datasets. Supports both API key and email/password authentication methods.",
   "author": {
     "name": "Jericho Sequitin",
     "url": "https://github.com/jerichosequitin"
@@ -25,6 +25,9 @@
       "env": {
         "METABASE_URL": "${user_config.metabase_url}",
         "METABASE_API_KEY": "${user_config.metabase_api_key}",
+        "METABASE_USER_EMAIL": "${user_config.metabase_user_email}",
+        "METABASE_PASSWORD": "${user_config.metabase_password}",
+        "EXPORT_DIRECTORY": "${user_config.export_directory}",
         "LOG_LEVEL": "${user_config.log_level}",
         "CACHE_TTL_MS": "${user_config.cache_ttl_ms}",
         "REQUEST_TIMEOUT_MS": "${user_config.request_timeout_ms}"
@@ -73,17 +76,40 @@
   "user_config": {
     "metabase_url": {
       "type": "string",
-      "title": "Metabase URL",
-      "description": "Your Metabase instance URL",
+      "title": "URL",
+      "description": "Metabase URL",
       "required": true,
       "default": "https://your-metabase-instance.com"
     },
     "metabase_api_key": {
       "type": "string",
       "title": "API Key",
-      "description": "Metabase API key for authentication",
+      "description": "Metabase API Key. Leave empty for email/password authentication.",
+      "required": false,
+      "sensitive": true,
+      "default": ""
+    },
+    "metabase_user_email": {
+      "type": "string",
+      "title": "User Email",
+      "description": "Metabase User Email. Leave empty for API key authentication.",
+      "required": false,
+      "default": ""
+    },
+    "metabase_password": {
+      "type": "string",
+      "title": "Password",
+      "description": "Metabase User Password. Leave empty for API key authentication.",
+      "required": false,
+      "sensitive": true,
+      "default": ""
+    },
+    "export_directory": {
+      "type": "directory",
+      "title": "Export Directory",
+      "description": "Directory where exported files will be saved",
       "required": true,
-      "sensitive": true
+      "default": "${DOWNLOADS}/Metabase"
     },
     "log_level": {
       "type": "string",
@@ -109,6 +135,10 @@
     }
   },
   "compatibility": {
-    "node": ">=18.0.0"
+    "claude_desktop": ">=0.11.0",
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
   }
 }

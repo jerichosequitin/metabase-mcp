@@ -4,6 +4,29 @@
 
 import 'dotenv/config';
 import { z } from 'zod';
+import { homedir } from 'os';
+import { join } from 'path';
+
+// Helper function to expand DXT system variables
+function expandSystemVariables(path: string | undefined): string {
+  // If no path is provided, use default
+  if (!path) {
+    return join(homedir(), 'Downloads', 'Metabase');
+  }
+
+  const homeDir = homedir();
+  const desktopDir = join(homeDir, 'Desktop');
+  const documentsDir = join(homeDir, 'Documents');
+  const downloadsDir = join(homeDir, 'Downloads');
+
+  return path
+    .replace(/\$\{HOME\}/g, homeDir)
+    .replace(/\$\{DESKTOP\}/g, desktopDir)
+    .replace(/\$\{DOCUMENTS\}/g, documentsDir)
+    .replace(/\$\{DOWNLOADS\}/g, downloadsDir)
+    .replace(/\$HOME/g, homeDir)
+    .replace(/^~/, homeDir);
+}
 
 // Environment variable schema
 const envSchema = z
@@ -24,6 +47,7 @@ const envSchema = z
       .default('600000')
       .transform(val => parseInt(val, 10))
       .pipe(z.number().positive()), // 10 minutes
+    EXPORT_DIRECTORY: z.string().default('${DOWNLOADS}/Metabase').transform(expandSystemVariables),
   })
   .refine(data => data.METABASE_API_KEY || (data.METABASE_USER_EMAIL && data.METABASE_PASSWORD), {
     message:
@@ -55,6 +79,7 @@ function createTestConfig() {
     LOG_LEVEL: 'info' as const,
     CACHE_TTL_MS: 600000,
     REQUEST_TIMEOUT_MS: 600000,
+    EXPORT_DIRECTORY: join(homedir(), 'Downloads', 'Metabase'),
   };
 }
 

@@ -1,99 +1,75 @@
 #!/usr/bin/env node
 
 /**
- * Build script for creating separate DXT packages for different authentication methods
+ * Build script for creating DXT package
  */
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// Configuration for the two authentication methods
-const dxtConfigs = [
-  {
-    name: 'api-key',
-    manifestFile: 'manifest-api-key.json',
-    outputFile: 'metabase-mcp-api-key.dxt',
-    displayName: 'Metabase (API Key Authentication)',
-  },
-  {
-    name: 'session',
-    manifestFile: 'manifest-session.json',
-    outputFile: 'metabase-mcp-session.dxt',
-    displayName: 'Metabase (Session Authentication)',
-  },
-];
-
 function log(message) {
   console.log(`[DXT Builder] ${message}`);
 }
 
-function buildDxtPackage(config) {
-  log(`Building ${config.displayName}...`);
-  
+function buildDxtPackage() {
+  log('Building Metabase MCP DXT package...');
+
   try {
-    // Copy the specific manifest to manifest.json
-    const manifestPath = path.join(process.cwd(), config.manifestFile);
-    const targetManifestPath = path.join(process.cwd(), 'manifest.json');
-    
+    const manifestPath = path.join(process.cwd(), 'manifest.json');
+
+    // Verify manifest exists
     if (!fs.existsSync(manifestPath)) {
-      throw new Error(`Manifest file not found: ${config.manifestFile}`);
+      throw new Error('manifest.json not found');
     }
-    
-    log(`Using manifest: ${config.manifestFile}`);
-    fs.copyFileSync(manifestPath, targetManifestPath);
-    
+
+    // Read and validate manifest
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const outputFile = `${manifest.name}-${manifest.version}.dxt`;
+    log(`Building: ${manifest.name} v${manifest.version}`);
+
     // Build the DXT package
-    const dxtCommand = `dxt pack . ${config.outputFile}`;
+    const dxtCommand = `dxt pack . ${outputFile}`;
     log(`Executing: ${dxtCommand}`);
-    
-    execSync(dxtCommand, { 
+
+    execSync(dxtCommand, {
       stdio: 'inherit',
       cwd: process.cwd()
     });
-    
-    log(`Successfully created: ${config.outputFile}`);
-    
+
+    log(`Successfully created: ${outputFile}`);
+
     // Verify the file was created
-    const outputPath = path.join(process.cwd(), config.outputFile);
+    const outputPath = path.join(process.cwd(), outputFile);
     if (!fs.existsSync(outputPath)) {
-      throw new Error(`DXT file was not created: ${config.outputFile}`);
+      throw new Error(`DXT file was not created: ${outputFile}`);
     }
-    
+
     const stats = fs.statSync(outputPath);
     log(`File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
-    
+
+    return outputFile;
   } catch (error) {
-    log(`Error building ${config.displayName}: ${error.message}`);
+    log(`Error building DXT package: ${error.message}`);
     throw error;
   }
 }
 
+
 function main() {
   log('Starting DXT package build process...');
-  
+
   // Ensure we're in the project root
   const packageJsonPath = path.join(process.cwd(), 'package.json');
   if (!fs.existsSync(packageJsonPath)) {
     throw new Error('package.json not found. Please run this script from the project root.');
   }
-  
-  // Build each DXT package
-  for (const config of dxtConfigs) {
-    buildDxtPackage(config);
-  }
-  
-  log('All DXT packages built successfully!');
-  
-  // List the created files
-  log('\nCreated DXT packages:');
-  for (const config of dxtConfigs) {
-    const outputPath = path.join(process.cwd(), config.outputFile);
-    if (fs.existsSync(outputPath)) {
-      const stats = fs.statSync(outputPath);
-      log(`  - ${config.outputFile} (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
-    }
-  }
+
+  // Build the DXT package
+  const outputFile = buildDxtPackage();
+
+  log('\nDXT package built successfully!');
+  log(`Created: ${outputFile}`);
 }
 
 if (require.main === module) {
@@ -105,4 +81,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildDxtPackage, dxtConfigs };
+module.exports = { buildDxtPackage };

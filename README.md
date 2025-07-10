@@ -3,49 +3,43 @@
 [![smithery badge](https://smithery.ai/badge/@jerichosequitin/metabase-mcp)](https://smithery.ai/server/@jerichosequitin/metabase-mcp)
 
 **Version**: 1.0.0
+
 **Author**: Jericho Sequitin (@jerichosequitin)
 
-A lightweight, enterprise-grade Model Context Protocol server designed for high-performance integration between AI assistants and Metabase analytics platforms. Built with intelligent caching, response optimization, and unified command architecture.
+A high-performance Model Context Protocol server for AI integration with Metabase analytics platforms. Features intelligent caching, response optimization, and comprehensive data access tools.
 
 **Available as a Desktop Extension (DXT) for Claude Desktop.**
 
-## Overview
-
-This TypeScript-based MCP server provides seamless integration with the Metabase API, enabling AI assistants to directly interact with your analytics data with enterprise-level performance and reliability. Designed for Claude and other MCP-compatible AI assistants, this server acts as an optimized bridge between your analytics platform and conversational AI. The server communicates via STDIO and is automatically managed by host applications.
-
-### Installation Options
+## Installation Options
 
 #### Option 1: Desktop Extension (Recommended for Claude Desktop Users)
 
-Choose the appropriate DXT package for your authentication method:
-
-**API Key Authentication (Recommended):**
-1. Download `metabase-mcp-api-key.dxt` from [Releases](https://github.com/jerichosequitin/metabase-mcp/releases)
+1. Download `metabase-mcp.dxt` from [Releases](https://github.com/jerichosequitin/metabase-mcp/releases)
 2. Open the `.dxt` file with Claude Desktop to install
-3. Configure your Metabase URL and API key in Claude Desktop's extension settings
+3. Configure your Metabase credentials in Claude Desktop's extension settings:
+   - **Metabase URL** (required)
+   - **Authentication**: Choose either API key OR email/password
+   - **Export Directory**: Customize where files are saved (defaults to Downloads/Metabase)
+   - **Optional**: Log level, cache TTL, and request timeout settings
 
-**Session Authentication (Email/Password):**
-1. Download `metabase-mcp-session.dxt` from [Releases](https://github.com/jerichosequitin/metabase-mcp/releases)
-2. Open the `.dxt` file with Claude Desktop to install
-3. Configure your Metabase URL, email, and password in Claude Desktop's extension settings
+##### Benefits of DXT Installation
+
+- **Single-click installation**: No manual configuration files or command-line setup
+- **Automatic updates**: Claude Desktop manages extension updates
+- **User-friendly settings**: Configure through Claude Desktop's UI
+- **Seamless integration**: Tools automatically available in your conversations
 
 #### Option 2: Manual Installation
-Follow the standard MCP server installation process detailed in the Configuration section below.
+Follow the standard MCP server installation process detailed in the Local Development Setup section below.
 
-### Key Features
+## Key Features
 
-- **High Performance**: Aggressive response optimization with up to 90% token reduction*
-- **Unified Commands**: Streamlined `list`, `retrieve`, and `search` commands for all resource types
-- **Intelligent Caching**: Multi-layer caching system with configurable TTL and fallback support
-- **Enterprise Authentication**: Support for both session-based and API key authentication
-- **Advanced Search**: Native Metabase search API with model-specific filtering
-- **Data Export**: High-capacity export (up to 1M rows) in CSV, JSON, and XLSX formats
-- **Structured Data Access**: JSON-formatted responses optimized for AI consumption
-- **Comprehensive Logging**: Detailed logging with performance metrics and debugging
-- **Robust Error Handling**: Graceful error handling with clear error messages
-- **Concurrent Processing**: Batch processing with controlled concurrency for optimal performance
-
-*Performance optimization figures are based on internal testing and may vary depending on your Metabase instance configuration and data complexity.
+- **High Performance**: Up to 90% token reduction through response optimization
+- **Unified Commands**: `list`, `retrieve`, `search`, `execute`, and `export` tools
+- **Smart Caching**: Multi-layer caching with configurable TTL
+- **Dual Authentication**: API key or email/password authentication
+- **Large Data Export**: Export up to 1M rows in CSV, JSON, and XLSX formats
+- **Configurable Export Directory**: Customize where files are saved
 
 ## Available Tools
 
@@ -82,8 +76,7 @@ The server exposes the following optimized tools for AI assistants:
   - **Card Mode**: Export saved Metabase card results with card_id parameter and optional filtering
   - **Card Parameters**: Filter card results before export using `card_parameters` array
   - Supports CSV, JSON, and XLSX formats with case-insensitive format handling
-  - Automatic file saving to ~/Downloads/Metabase/ with custom naming support
-  - Enhanced validation including positive ID validation
+  - Automatic file saving to configurable directory (defaults to ~/Downloads/Metabase/)
 
 ### Utility Tools
 - **`clear_cache`**: Clear internal cache with granular control
@@ -92,179 +85,91 @@ The server exposes the following optimized tools for AI assistants:
   - List caches: `cards-list`, `dashboards-list`, `tables-list`, `databases-list`, `collections-list`
   - Bulk operations: `all`, `all-individual`, `all-lists`
 
+## Quick Start Examples
 
-## Performance Optimizations
+```javascript
+// List all cards
+list({ model: "cards" })
 
-### Response Optimization
-- **Cards**: ~90% reduction (45,000+ → 4,000-5,000 characters)*
-- **Dashboards**: ~85% reduction (50,000+ → 7,500 characters)*
-- **Tables**: ~80% reduction (40,000+ → 8,000 characters)*
-- **Databases**: ~75% reduction (25,000+ → 6,000-7,500 characters)*
-- **Collections**: ~15% reduction (2,500+ → 2,000 characters)*
-- **Fields**: ~75% reduction (15,000+ → 3,000-4,000 characters)*
+// Get detailed card information
+retrieve({ model: "card", ids: [1, 2, 3] })
 
-*Token reduction figures are based on typical Metabase responses and may vary depending on your specific data structure and configuration.
+// Search for dashboards
+search({ query: "sales", models: ["dashboard"] })
 
+// Execute SQL query
+execute({
+  database_id: 1,
+  query: "SELECT * FROM users LIMIT 100"
+})
 
-### Caching System
-- **Multi-layer Caching**: Separate caches for individual items and bulk lists
-- **Configurable TTL**: Default 10-minute cache duration with environment variable control
-- **Fallback Support**: Stale cache data returned during API failures
-- **Cache Metrics**: Detailed performance tracking and hit/miss reporting
-
-### Concurrent Processing
-- **Batch Processing**: Controlled concurrency for retrieve operations
-- **Rate Limiting**: Prevents API overload with intelligent batching
-- **Performance Metrics**: Real-time processing statistics and time savings
-
-## Desktop Extension (DXT) for Claude Desktop
-
-The Metabase MCP Server is now available as a Desktop Extension (DXT) for Claude Desktop users, providing single-click installation and automatic configuration.
-
-### DXT Installation
-
-Due to current limitations in the DXT file format specification, we provide separate DXT packages for different authentication methods:
-
-1. **Download** the appropriate DXT file from [GitHub Releases](https://github.com/jerichosequitin/metabase-mcp/releases):
-   - `metabase-mcp-api-key.dxt` - For API key authentication (recommended)
-   - `metabase-mcp-session.dxt` - For email/password authentication
-2. **Install**: Open the `.dxt` file with Claude Desktop - it will automatically show an installation dialog
-3. **Configure**: Set up your Metabase credentials in Claude Desktop's extension settings:
-   - **Metabase URL** (required): Your Metabase instance URL
-   - Authentication credentials based on your chosen DXT package
-   - **Optional**: Log level, cache TTL, and request timeout settings
-
-> **Note**: The separate DXT packages are required due to current limitations in the DXT v0.1 specification regarding optional environment variables. Both packages provide identical functionality with different authentication methods.
-
-### Benefits of DXT Installation
-
-- **Single-click installation**: No manual configuration files or command-line setup
-- **Automatic updates**: Claude Desktop manages extension updates
-- **User-friendly settings**: Configure through Claude Desktop's UI
-- **Seamless integration**: Tools automatically available in your conversations
+// Export large dataset
+export({
+  database_id: 1,
+  query: "SELECT * FROM large_table",
+  format: "csv"
+})
+```
 
 ## Configuration
 
-The server supports two authentication methods for both DXT and manual installations:
+### Authentication Options
 
-### Option 1: Username and Password Authentication
-
+**API Key (Recommended):**
 ```bash
-# Required
+METABASE_URL=https://your-metabase-instance.com
+METABASE_API_KEY=your_api_key
+```
+
+**Email/Password:**
+```bash
 METABASE_URL=https://your-metabase-instance.com
 METABASE_USER_EMAIL=your_email@example.com
 METABASE_PASSWORD=your_password
-
-# Optional Performance Settings
-LOG_LEVEL=info # Options: debug, info, warn, error, fatal
-CACHE_TTL_MS=600000 # Cache duration in milliseconds (default: 10 minutes)
-REQUEST_TIMEOUT_MS=600000 # Request timeout in milliseconds (default: 10 minutes)
 ```
 
-### Option 2: API Key Authentication (Recommended for Production)
+**Optional Settings:**
+```bash
+EXPORT_DIRECTORY=~/Downloads/Metabase  # Or ${DOWNLOADS}/Metabase
+LOG_LEVEL=info
+```
+
+## Manual Installation (Developers)
+
+### Prerequisites
+- Node.js 18.0.0 or higher
+- Active Metabase instance
+
+### Setup
+
+```bash
+# Clone and build
+git clone https://github.com/jerichosequitin/metabase-mcp.git
+cd metabase-mcp
+npm install
+npm run build
+```
+
+### Environment Configuration
+
+Create a `.env` file:
 
 ```bash
 # Required
 METABASE_URL=https://your-metabase-instance.com
-METABASE_API_KEY=your_api_key
 
-# Optional Performance Settings
+# Choose authentication method
+METABASE_API_KEY=your_api_key  # Recommended
+# OR
+# METABASE_USER_EMAIL=your_email@example.com
+# METABASE_PASSWORD=your_password
+
+# Optional
+EXPORT_DIRECTORY=~/Downloads/Metabase  # Or ${DOWNLOADS}/Metabase
 LOG_LEVEL=info
-CACHE_TTL_MS=600000
-REQUEST_TIMEOUT_MS=600000
+CACHE_TTL_MS=600000 # 10 minutes by default
+REQUEST_TIMEOUT_MS=600000 # 10 minutes by default
 ```
-
-You can set these environment variables directly or use a `.env` file with [dotenv](https://www.npmjs.com/package/dotenv).
-
-## Installation
-
-### Prerequisites
-
-- Node.js 18.0.0 or higher
-- An active Metabase instance with appropriate credentials
-
-### Development Setup
-
-```bash
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Test the server build
-npm start
-
-# For development with auto-rebuild and concurrent watching
-npm run dev:watch
-```
-
-### Available Scripts
-
-```bash
-# Development
-npm run dev:watch        # Concurrent TypeScript compilation and nodemon
-npm run watch           # TypeScript watch mode only
-npm run dev            # Build and run once
-
-# Production
-npm run build          # Build TypeScript to JavaScript
-npm run build:clean    # Clean build and rebuild
-npm start             # Test the built server (for development/debugging only)
-
-# Quality Assurance
-npm run lint          # Run ESLint
-npm run lint:fix      # Fix ESLint issues
-npm run format        # Format code with Prettier
-npm run format:check  # Check formatting
-npm run type-check    # TypeScript type checking
-npm run validate      # Run all QA checks
-
-# Debugging
-npm run inspector     # Test with MCP Inspector (for development/debugging)
-npm run clean         # Clean build artifacts
-```
-
-### Local Development Setup
-
-For local development and testing, follow these steps:
-
-1. **Clone and build the project**:
-   ```bash
-   git clone <https://github.com/jerichosequitin/metabase-mcp.git>
-   cd metabase-mcp
-   npm install
-   npm run build
-   ```
-
-2. **Set up environment variables**:
-   Create a `.env` file in the project root:
-   ```bash
-   # Required - Your Metabase instance
-   METABASE_URL=https://your-metabase-instance.com
-
-   # Authentication (choose one method)
-   # Method 1: API Key (recommended)
-   METABASE_API_KEY=your_api_key_here
-
-   # Method 2: Username/Password
-   # METABASE_USER_EMAIL=your_email@example.com
-   # METABASE_PASSWORD=your_password
-
-   # Optional settings
-   LOG_LEVEL=info
-   CACHE_TTL_MS=600000
-   REQUEST_TIMEOUT_MS=600000
-   ```
-
-3. **Verify the build**:
-   ```bash
-   # Verify the build was successful
-   ls -la build/src/index.js
-
-   # Optional: Test the server build (for development/debugging only)
-   # npm start
-   ```
 
 ### Claude Desktop Integration
 
@@ -284,24 +189,8 @@ To integrate with Claude Desktop, you'll need to configure the MCP server in Cla
         "METABASE_URL": "https://your-metabase-instance.com",
         "METABASE_API_KEY": "your_api_key_here",
         "LOG_LEVEL": "info",
-        "CACHE_TTL_MS": "600000"
-      }
-    }
-  }
-}
-```
-
-#### For Production/Installed Package:
-```json
-{
-  "mcpServers": {
-    "metabase-mcp": {
-      "command": "metabase-mcp",
-      "env": {
-        "METABASE_URL": "https://your-metabase-instance.com",
-        "METABASE_API_KEY": "your_api_key_here",
-        "LOG_LEVEL": "info",
-        "CACHE_TTL_MS": "600000"
+        "CACHE_TTL_MS": "600000",
+        "EXPORT_DIRECTORY": "/path/to/your/export/directory"
       }
     }
   }
@@ -322,396 +211,83 @@ To integrate with Claude Desktop, you'll need to configure the MCP server in Cla
 - Check Claude Desktop's logs for any connection errors
 - Make sure the server builds successfully with `npm run build`
 
-## Usage Examples
+## Advanced Usage
 
-### List All Resources
-```javascript
-// Get overview of all cards
-list({ model: "cards" })
+### Card Parameters
 
-// Get first 100 cards with pagination (for large datasets)
-list({ model: "cards", limit: 100 })
-
-// Get next page of cards
-list({ model: "cards", offset: 100, limit: 100 })
-
-// Get overview of all dashboards
-list({ model: "dashboards" })
-
-// Get overview of all tables
-list({ model: "tables" })
-
-// Get overview of all databases
-list({ model: "databases" })
-
-// Get overview of all collections
-list({ model: "collections" })
-```
-
-### Retrieve Detailed Information
-```javascript
-// Get detailed information for specific cards
-retrieve({ model: "card", ids: [1, 2, 3] })
-
-// Get detailed dashboard information
-retrieve({ model: "dashboard", ids: [42] })
-
-// Get table schema information
-retrieve({ model: "table", ids: [10, 11] })
-
-// Get database information (supports pagination for large databases)
-retrieve({ model: "database", ids: [3] })
-
-// For large databases, use pagination
-retrieve({ model: "database", ids: [3], table_limit: 20, table_offset: 0 })
-```
-
-### Advanced Search
-```javascript
-// Search across all model types
-search({
-  query: "sales",
-  models: ["card", "dashboard"],
-  max_results: 20
-})
-
-// Search with database filtering
-search({
-  query: "user data",
-  models: ["card"],
-  database_id: 1,
-  search_native_query: true
-})
-
-// Search by specific IDs
-search({
-  ids: [1, 2, 3],
-  models: ["card"]
-})
-```
-
-### Query Execution Workflow
-
-#### Card Parameters Format
-When using card mode for both `execute` and `export` commands, you can filter results using the `card_parameters` array. Each parameter follows Metabase's internal parameter structure:
+For executing saved cards with filters, use the `card_parameters` array:
 
 ```javascript
-{
-  "id": "parameter-uuid",           // UUID of the parameter
-  "slug": "parameter_name",         // Parameter name/slug
-  "target": ["dimension", ["template-tag", "parameter_name"]], // Target definition
-  "type": "parameter_type",         // Parameter type (id, text, date/all-options, etc.)
-  "value": "parameter_value"        // The actual filter value
-}
-```
-
-**Examples of valid parameter formats:**
-
-**ID Parameter:**
-```javascript
-{
-  "id": "b86c100e-87cb-09d6-7c33-e58cd2cdbcb2",
-  "slug": "user_id",
-  "target": ["dimension", ["template-tag", "user_id"]],
-  "type": "id",
-  "value": "12345"
-}
-```
-
-**Date Range Parameter:**
-```javascript
-{
-  "id": "1646c8b5-b9fb-32db-c198-7685b3f793d8",
-  "slug": "date_range",
-  "target": ["dimension", ["template-tag", "date_range"]],
-  "type": "date/all-options",
-  "value": "2025-01-01~2025-12-31"
-}
-```
-
-**Text Parameter:**
-```javascript
-{
-  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "slug": "status",
-  "target": ["dimension", ["template-tag", "status"]],
-  "type": "text",
-  "value": "active"
-}
-```
-
-> **Note**: To get the correct parameter structure for a specific card, you can first retrieve the card details using the `retrieve` command with the card ID, which will show you the parameter definitions including their IDs, types, and expected formats.
-
-#### Execute SQL Queries or Cards
-```javascript
-// Execute custom SQL query
-execute({
-  database_id: 1,
-  query: "SELECT * FROM users WHERE created_at > '2024-01-01'",
-  row_limit: 500
-})
-
-// Execute saved card with filtering parameters
 execute({
   card_id: 42,
   card_parameters: [
     {
-      "id": "1646c8b5-b9fb-32db-c198-7685b3f793d8",
+      "id": "param-uuid",
       "slug": "start_date",
       "target": ["dimension", ["template-tag", "start_date"]],
       "type": "date/all-options",
       "value": "2024-01-01~2024-12-31"
-    },
-    {
-      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "slug": "status",
-      "target": ["dimension", ["template-tag", "status"]],
-      "type": "text",
-      "value": "active"
-    },
-    {
-      "id": "b86c100e-87cb-09d6-7c33-e58cd2cdbcb2",
-      "slug": "department_id",
-      "target": ["dimension", ["template-tag", "department_id"]],
-      "type": "id",
-      "value": "123"
     }
-  ],
-  row_limit: 1000
+  ]
 })
 ```
 
-#### Export Large Datasets
+*Get parameter structure by retrieving card details first.*
+
+### Pagination
+
 ```javascript
-// Export SQL query as CSV with auto-save
-export({
-  database_id: 1,
-  query: "SELECT * FROM large_table",
-  format: "csv",  // Case-insensitive: "CSV", "Csv" also work
-  filename: "large_export"
-})
+// List with pagination
+list({ model: "cards", limit: 100, offset: 0 })
 
-// Export saved card as Excel file with filtering parameters
-export({
-  card_id: 123,
-  card_parameters: [
-    {
-      "id": "f1e2d3c4-b5a6-9870-cdef-123456789abc",
-      "slug": "year",
-      "target": ["dimension", ["template-tag", "year"]],
-      "type": "number",
-      "value": "2024"
-    },
-    {
-      "id": "a9b8c7d6-e5f4-3210-9876-fedcba987654",
-      "slug": "region",
-      "target": ["dimension", ["template-tag", "region"]],
-      "type": "text",
-      "value": "North America"
-    },
-    {
-      "id": "1a2b3c4d-5e6f-7890-abcd-ef1234567890",
-      "slug": "min_amount",
-      "target": ["dimension", ["template-tag", "min_amount"]],
-      "type": "number",
-      "value": "1000"
-    }
-  ],
-  format: "XLSX"  // Case-insensitive format handling
-})
-
-// Export as JSON for API integration
-export({
-  database_id: 1,
-  query: "SELECT id, name, email FROM users",
-  format: "json"
-})
+// Large database tables
+retrieve({ model: "database", ids: [1], table_limit: 20 })
 ```
 
-### Cache Management
-```javascript
-// Clear all caches (individual items and lists)
-clear_cache({ cache_type: "all" })
-
-// Clear specific individual item cache
-clear_cache({ cache_type: "cards" })
-
-// Clear specific list cache
-clear_cache({ cache_type: "cards-list" })
-
-// Clear all individual item caches only
-clear_cache({ cache_type: "all-individual" })
-
-// Clear all list caches only
-clear_cache({ cache_type: "all-lists" })
-
-// Clear specific model's list cache (for list command optimization)
-clear_cache({ cache_type: "dashboards-list" })
-```
-
-## Performance Metrics
-
-The server provides detailed performance metrics for all operations:
-
-- **Cache Hit/Miss Ratios**: Track cache effectiveness
-- **Response Times**: Monitor API and optimization performance
-- **Concurrent Processing**: Measure time savings from parallel operations
-- **Token Savings**: Quantify response optimization benefits
-- **Memory Usage**: Track cache memory consumption
 
 ## Debugging
 
-MCP servers communicate via STDIO (not HTTP) and are managed by host applications like Claude Desktop. For debugging and development testing, use the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
+Use the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) for development:
 
 ```bash
 npm run inspector
 ```
 
-The Inspector provides a browser-based interface for monitoring MCP protocol requests, responses, and performance metrics during development.
-
 ## Docker Support
 
-### Building the Docker Image
-
 ```bash
-# Build the Docker image
+# Build and test
 docker build -t metabase-mcp .
-
-# Test with API key authentication
 docker run -e METABASE_URL=https://metabase.example.com \
            -e METABASE_API_KEY=your_api_key \
-           -e LOG_LEVEL=info \
            metabase-mcp
-
-# Test with username/password authentication
-docker run -e METABASE_URL=https://metabase.example.com \
-           -e METABASE_USER_EMAIL=user@example.com \
-           -e METABASE_PASSWORD=password \
-           -e LOG_LEVEL=info \
-           metabase-mcp
-
-# Note: Docker is primarily for development/testing. In production,
-# host applications like Claude Desktop manage the MCP server lifecycle via STDIO.
 ```
 
-## Testing
+*Note: Docker is primarily for development/testing.*
 
-### Comprehensive Test Suite
+## Development
 
-The project includes a robust testing framework with comprehensive unit tests covering all MCP commands and edge cases:
-
-#### Test Coverage by Handler
-- **clearCache**: Parameter validation, cache operations, response formatting
-- **execute**: SQL execution, parameter handling, row limits, query processing
-- **export**: Format support (CSV/JSON/XLSX), file operations, validation
-- **list**: All model types, caching, error handling, empty results
-- **retrieve**: Multi-entity support, batch operations, cache behavior
-- **search**: Advanced search parameters, model restrictions, query combinations
-
-#### Quality Assurance Features
-- **80% Coverage Threshold**: Enforced via Vitest configuration
-- **Parameter Validation**: Comprehensive testing of all input validation
-- **Error Scenarios**: Complete coverage of error conditions and edge cases
-- **Mock Infrastructure**: Sophisticated API client and environment mocking
-- **Cache Testing**: Verification of cache behavior and performance metrics
-- **TypeScript Compliance**: Full type safety validation
-
-### Running Tests
+### Testing
 
 ```bash
-# Run all tests
+# Run tests
 npm test
 
-# Run tests with coverage report
+# Coverage report
 npm run test:coverage
 
-# Run tests in watch mode
-npm run test:watch
-
-# Run comprehensive test suite with quality checks
-npm run test:all
-
-# Run the full quality assurance pipeline
-./scripts/test-all.sh
+# Development tools
+npm run inspector  # MCP Inspector for debugging
 ```
 
-### Test Infrastructure
-
-The testing setup includes:
-- **Vitest**: Modern testing framework with TypeScript support
-- **Mock API Client**: Complete Metabase API simulation
-- **Test Data**: Comprehensive sample data for all entity types
-- **Environment Mocking**: Isolated test environment configuration
-- **Coverage Analysis**: Detailed coverage reports with HTML output
-- **CI Integration**: Automated testing across Node.js versions (18.x, 20.x, 22.x)
-
-### GitHub Actions Integration
-
-Automated testing runs on:
-- **Push/PR Events**: Comprehensive test suite execution
-- **Multi-Node Testing**: Parallel testing across Node.js versions
-- **Quality Gates**: Type checking, linting, formatting, and coverage validation
-- **Docker Testing**: Container build and startup verification
-- **Performance Monitoring**: Test execution time and coverage metrics
-
-## Development Improvements
-
-### Enhanced Development Experience
-- **Concurrent Development**: TypeScript compilation and nodemon running simultaneously
-- **ESLint Integration**: Comprehensive linting with TypeScript support
-- **Prettier Formatting**: Consistent code formatting
-- **Type Checking**: Strict TypeScript configuration
-- **CI/CD Pipeline**: Automated testing and validation
-
-### Code Quality
-- **Modular Architecture**: Organized handlers, types, and utilities
-
-## Building Desktop Extension (DXT)
-
-For developers who want to build and distribute the Desktop Extension:
-
-### Prerequisites
-- Node.js 18+ installed
-- DXT CLI tool: `npm install -g @anthropic-ai/dxt`
-
-### Building the DXT Package
+### Building DXT Package
 
 ```bash
-# 1. Build the project
-npm run build
-
-# 2. Create the DXT package
-dxt pack .
-
-# This creates metabase-mcp.dxt ready for distribution
-```
-
-### DXT Development Scripts
-
-```bash
-# Run complete DXT build and validation
+# Build for distribution
 npm run dxt:build
-
-# Validate DXT manifest structure
-npm run dxt:test
 ```
 
-### Distribution
-
-1. The `.dxt` file should be distributed via GitHub Releases (not committed to the repository)
-2. Users download and open the file with Claude Desktop for automatic installation
-3. No specific storage location required - Claude Desktop handles the installation
-
-### DXT Package Contents
-
-- **manifest.json**: DXT configuration and metadata
-- **build/**: Compiled TypeScript server code
-- **node_modules/**: All required dependencies
-- **icon.png**: Metabase logo for the extension
-- **package.json**: NPM configuration
-- **Error Handling**: Comprehensive error handling with detailed logging
-- **Documentation**: Extensive inline documentation and type definitions
-- **Testing**: Automated CI testing across Node.js versions
+Creates `metabase-mcp.dxt` ready for GitHub Releases.
 
 ## Security Considerations
 

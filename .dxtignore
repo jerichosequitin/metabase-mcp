@@ -1,0 +1,87 @@
+# DXT Package Ignore File
+# Specifies files and patterns to exclude from the DXT package
+
+# Test files
+*.test.ts
+*.test.js
+tests/
+__tests__/
+*.spec.ts
+*.spec.js
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Documentation and development files
+docs/
+*.md
+!README.md
+LICENSE
+CONTRIBUTING.md
+CHANGELOG.md
+
+# Configuration files
+.env
+.env.*
+!.env.example
+.eslintrc*
+.prettierrc*
+.gitignore
+.editorconfig
+tsconfig.json
+vitest.config.ts
+jest.config.*
+
+# Build and development scripts
+scripts/
+*.sh
+
+# Source files (only include built files)
+src/
+!build/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp
+*.temp
+.cache/
+
+# Development dependencies
+node_modules/.cache/
+node_modules/.bin/
+
+# Other package managers
+yarn.lock
+pnpm-lock.yaml
+.yarn/
+.pnpm/
+
+# Docker files (for development)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Git
+.git/
+.gitattributes
+
+# Other development files
+Makefile
+*.bak
+*.swp
+*~
