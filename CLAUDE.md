@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a TypeScript-based Model Context Protocol (MCP) server that provides AI assistants with optimized access to Metabase analytics data. The server acts as a bridge between AI systems (like Claude) and Metabase instances, offering high-performance data retrieval with intelligent caching and response optimization.
 
+**Multi-Agent Architecture**: This project supports comprehensive AI agent integration including error guidance, recovery patterns, and multi-agent communication. See [AGENTS.md](AGENTS.md) for agent-specific documentation.
+
 ## Key Architecture
 
 ### Core Components
@@ -249,9 +251,10 @@ Per MCP documentation, there's a fundamental difference between Resources and To
 
 ### Error Handling
 - Comprehensive error handling with structured logging
-- Custom `McpError` class for consistent error responses
+- Custom `McpError` class for consistent error responses with `agentGuidance` field
 - Global error handlers in entry point
-- Detailed error messages with context
+- Detailed error messages with context and recovery actions
+- AI agent-specific error guidance (see [AGENTS.md](AGENTS.md#agent-error-handling))
 
 ### Build Process
 The build process includes:
@@ -271,3 +274,29 @@ npm run inspector
 ```
 
 This provides a browser-based interface for monitoring requests, responses, and performance metrics.
+
+## AI Agent Integration
+
+This project includes comprehensive AI agent support and multi-agent architectures. For detailed information about:
+
+- Agent error handling with `agentGuidance` field
+- Multi-agent communication patterns
+- Bridge protocol specifications
+- Agent evaluation frameworks
+- Recovery action patterns
+- Agent metrics and monitoring
+
+See **[AGENTS.md](AGENTS.md)** for complete agent integration documentation.
+
+### Quick Agent Reference
+
+**Error Handling for Agents**:
+All errors include `agentGuidance` field with actionable recovery instructions. See [AGENTS.md](AGENTS.md#agent-error-handling) for details.
+
+**Multi-Agent Patterns**:
+- MCP Tool Invocation (Claude ↔ Metabase)
+- WebSocket Bridge Protocol (Swift ↔ Node.js)
+- Repository Management Agents (Auto-sync)
+- Runme Multi-Agent Evaluation
+
+See [AGENTS.md](AGENTS.md#agent-communication-patterns) for implementation details.

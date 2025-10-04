@@ -289,6 +289,23 @@ npm run dxt:build
 
 Creates `metabase-mcp.dxt` ready for GitHub Releases.
 
+## Documentation
+
+### Core Documentation
+- **[CLAUDE.md](CLAUDE.md)** - Claude Code agent development guidelines and project architecture
+- **[AGENTS.md](AGENTS.md)** - AI agent integration patterns, error handling, and multi-agent communication
+- **[CONTAINER-RUNTIME.md](CONTAINER-RUNTIME.md)** - Podman/Docker containerized runtime with Swift bridge
+- **[docs/enhanced-error-handling.md](docs/enhanced-error-handling.md)** - Enhanced error handling with agent guidance
+
+### Agent Integration
+This project includes comprehensive AI agent support:
+- Agent-specific error guidance via `agentGuidance` field
+- Multi-agent communication patterns (MCP, WebSocket, Bridge)
+- Recovery action patterns for automatic error handling
+- Repository management agents for auto-sync
+
+See [AGENTS.md](AGENTS.md) for complete agent integration documentation.
+
 ## Security Considerations
 
 - **API Key Authentication**: Recommended for production environments

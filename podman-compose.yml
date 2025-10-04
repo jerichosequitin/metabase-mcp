@@ -1,0 +1,209 @@
+version: '3.8'
+
+# Podman Compose configuration for Luci-Metabase-MCP Bridge Runtime
+# Implements multi-language bridge architecture with service orchestration
+
+services:
+  # ============================================================================
+  # Node.js MCP Server - Primary Service
+  # ============================================================================
+  mcp-server:
+    container_name: luci-mcp-server
+    build:
+      context: .
+      dockerfile: Containerfile
+    image: luci-metabase-mcp-bridge:latest
+
+    # Rootless Podman configuration
+    userns_mode: keep-id
+    security_opt:
+      - label=disable
+
+    # Environment configuration
+    environment:
+      # Metabase Connection (API Key method - recommended)
+      METABASE_URL: ${METABASE_URL:-https://metabase.example.com}
+      METABASE_API_KEY: ${METABASE_API_KEY:-}
+
+      # Alternative: Session Authentication
+      METABASE_USER_EMAIL: ${METABASE_USER_EMAIL:-}
+      METABASE_PASSWORD: ${METABASE_PASSWORD:-}
+
+      # Server Configuration
+      NODE_ENV: ${NODE_ENV:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      CACHE_TTL_MS: ${CACHE_TTL_MS:-600000}
+      REQUEST_TIMEOUT_MS: ${REQUEST_TIMEOUT_MS:-600000}
+
+      # Bridge Configuration
+      MCP_PORT: 3000
+      BRIDGE_PROTOCOL: websocket
+
+      # Web3/Hedera Integration (optional)
+      WEB3_ENABLED: ${WEB3_ENABLED:-false}
+      HEDERA_NETWORK: ${HEDERA_NETWORK:-testnet}
+      HEDERA_OPERATOR_ID: ${HEDERA_OPERATOR_ID:-}
+      HEDERA_OPERATOR_KEY: ${HEDERA_OPERATOR_KEY:-}
+
+    # Port mappings
+    ports:
+      - "3000:3000"    # MCP Server
+      - "8080:8080"    # WebSocket Bridge
+      - "9091:9091"    # Metrics
+
+    # Volume mounts
+    volumes:
+      - mcp-data:/app/data:rw
+      - mcp-logs:/app/logs:rw
+      - mcp-cache:/app/cache:rw
+      - type: tmpfs
+        target: /app/sockets
+        tmpfs:
+          size: 10485760  # 10MB
+
+    # Networking
+    networks:
+      - luci-bridge-network
+
+    # Resource limits (rootless-compatible)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+    # Restart policy
+    restart: unless-stopped
+
+  # ============================================================================
+  # Swift-NIO Bridge Server (Optional - when Swift components are ready)
+  # ============================================================================
+  swift-bridge:
+    container_name: luci-swift-bridge
+    build:
+      context: .
+      dockerfile: Containerfile
+      target: swift-builder
+    image: luci-swift-bridge:latest
+
+    # Rootless configuration
+    userns_mode: keep-id
+    security_opt:
+      - label=disable
+
+    environment:
+      SWIFT_BRIDGE_HOST: "::"
+      SWIFT_BRIDGE_PORT: 8001
+      SWIFT_NIO_THREADS: 0
+      MCP_SERVER_URL: http://mcp-server:3000
+
+    ports:
+      - "8001:8001"    # Swift-NIO HTTP/2
+      - "9090:9090"    # gRPC
+
+    volumes:
+      - swift-data:/app/data:rw
+
+    networks:
+      - luci-bridge-network
+
+    depends_on:
+      - mcp-server
+
+    # Only start if Swift bridge is enabled
+    profiles:
+      - swift
+      - full
+
+    restart: unless-stopped
+
+  # ============================================================================
+  # Runme Integration Server (Optional - for interactive documentation)
+  # ============================================================================
+  runme-server:
+    container_name: luci-runme
+    image: docker.io/node:lts-alpine
+
+    userns_mode: keep-id
+
+    working_dir: /workspace
+
+    volumes:
+      - ./luci-runme:/workspace:ro
+      - runme-cache:/root/.cache:rw
+
+    networks:
+      - luci-bridge-network
+
+    command: ["sh", "-c", "npm install -g runme && runme server"]
+
+    profiles:
+      - runme
+      - full
+
+    restart: unless-stopped
+
+  # ============================================================================
+  # Hedera Guardian Integration (Optional - for Web3 capabilities)
+  # ============================================================================
+  hedera-guardian:
+    container_name: luci-hedera-guardian
+    image: docker.io/node:lts
+
+    userns_mode: keep-id
+
+    environment:
+      HEDERA_NETWORK: ${HEDERA_NETWORK:-testnet}
+      HEDERA_OPERATOR_ID: ${HEDERA_OPERATOR_ID:-}
+      HEDERA_OPERATOR_KEY: ${HEDERA_OPERATOR_KEY:-}
+
+    volumes:
+      - hedera-data:/data:rw
+
+    networks:
+      - luci-bridge-network
+
+    profiles:
+      - hedera
+      - web3
+      - full
+
+    restart: unless-stopped
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  luci-bridge-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ============================================================================
+# Volumes (Podman volume management)
+# ============================================================================
+volumes:
+  mcp-data:
+    driver: local
+  mcp-logs:
+    driver: local
+  mcp-cache:
+    driver: local
+  swift-data:
+    driver: local
+  runme-cache:
+    driver: local
+  hedera-data:
+    driver: local

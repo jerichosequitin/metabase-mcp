@@ -1,0 +1,286 @@
+# Metabase MCP Bridge Integration for Ubuntu Autoinstall
+# Adds comprehensive ecosystem bridging capabilities for Metabase analytics
+
+# ===== BRIDGING ARCHITECTURE INTEGRATION =====
+
+# Add bridging packages to the main packages section
+bridge_packages:
+  # Swift ecosystem
+  - swift
+  - swift-runtime
+  - libswift-core
+  - libswift-dispatch
+  - libswift-foundation
+
+  # Networking and HTTP
+  - libcurl4-openssl-dev
+  - libssl-dev
+  - libevent-dev
+
+  # Development tools
+  - build-essential
+  - cmake
+  - pkg-config
+  - git
+
+  # Runtime dependencies
+  - libatomic1
+  - libicu70
+  - libxml2
+  - libz3-4
+
+# Snap packages for bridging tools
+bridge_snaps:
+  - name: node
+    classic: false
+    channel: "18/stable"
+  - name: docker
+    classic: true
+
+# Late commands for bridge setup
+bridge_late_commands:
+  # Create bridge directories
+  - curtin in-target -- mkdir -p /home/$USERNAME/.local/share/metabase-bridge/{config,logs,cache}
+
+  # Install bridging scripts
+  - curtin in-target -- curl -fsSL https://raw.githubusercontent.com/jerichosequitin/metabase-mcp/main/scripts/bridge-setup.sh -o /home/$USERNAME/.local/share/metabase-bridge/bridge-setup.sh
+  - curtin in-target -- chmod +x /home/$USERNAME/.local/share/metabase-bridge/bridge-setup.sh
+
+  # Create bridge configuration
+  - curtin in-target -- cat > /home/$USERNAME/.local/share/metabase-bridge/config/bridge.json << 'EOF'
+{
+  "version": "1.0.0",
+  "ecosystem_bridge": {
+    "apple_integration": true,
+    "nodejs_integration": true,
+    "metabase_processing": true
+  },
+  "networking": {
+    "swift_nio_enabled": true,
+    "http2_support": true,
+    "websocket_support": true,
+    "grpc_support": true
+  },
+  "security": {
+    "tls_enabled": true,
+    "input_validation": true,
+    "audit_logging": true
+  },
+  "performance": {
+    "connection_pooling": true,
+    "caching_enabled": true,
+    "async_processing": true
+  },
+  "metabase": {
+    "url": "http://localhost:3000",
+    "cache_ttl_ms": 600000,
+    "request_timeout_ms": 600000
+  }
+}
+EOF
+
+  # Create bridge service file
+  - curtin in-target -- cat > /etc/systemd/system/metabase-bridge.service << 'EOF'
+[Unit]
+Description=Metabase MCP Ecosystem Bridge Server
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=metabase
+Group=metabase
+ExecStart=/usr/local/bin/metabase-bridge --port 3000 --host ::
+Restart=always
+RestartSec=5
+Environment=METABASE_BRIDGE_CONFIG=/home/metabase/.local/share/metabase-bridge/config/bridge.json
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/metabase/.local/share/metabase-bridge /tmp
+
+# Resource limits
+LimitNOFILE=65536
+MemoryLimit=1G
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  # Enable and start bridge service
+  - curtin in-target -- systemctl daemon-reload
+  - curtin in-target -- systemctl enable metabase-bridge
+  - curtin in-target -- systemctl start metabase-bridge
+
+  # Create bridge management scripts
+  - curtin in-target -- cat > /home/$USERNAME/.local/share/metabase-bridge/bridge-manager.sh << 'EOF'
+#!/bin/bash
+# Metabase MCP Bridge Manager
+
+BRIDGE_CONFIG="/home/$USER/.local/share/metabase-bridge/config/bridge.json"
+BRIDGE_SERVICE="metabase-bridge"
+
+case "${1:-status}" in
+    "start")
+        echo "Starting Metabase MCP Bridge..."
+        sudo systemctl start $BRIDGE_SERVICE
+        echo "Bridge started"
+        ;;
+
+    "stop")
+        echo "Stopping Metabase MCP Bridge..."
+        sudo systemctl stop $BRIDGE_SERVICE
+        echo "Bridge stopped"
+        ;;
+
+    "restart")
+        echo "Restarting Metabase MCP Bridge..."
+        sudo systemctl restart $BRIDGE_SERVICE
+        echo "Bridge restarted"
+        ;;
+
+    "status")
+        echo "Metabase MCP Bridge Status:"
+        sudo systemctl status $BRIDGE_SERVICE --no-pager -l
+        echo ""
+        echo "Bridge API: http://localhost:3000"
+        echo "Health check: curl http://localhost:3000/health"
+        ;;
+
+    "logs")
+        echo "Bridge Logs:"
+        sudo journalctl -u $BRIDGE_SERVICE -f
+        ;;
+
+    "config")
+        echo "Bridge Configuration:"
+        cat $BRIDGE_CONFIG
+        ;;
+
+    "health")
+        echo "Bridge Health Check:"
+        curl -s http://localhost:3000/health | jq '.'
+        ;;
+
+    "metrics")
+        echo "Bridge Metrics:"
+        curl -s http://localhost:3000/api/v1/metrics | jq '.'
+        ;;
+
+    "test")
+        echo "Testing Bridge Functionality:"
+        echo "Testing Metabase processing..."
+        curl -s -X POST http://localhost:3000/api/v1/metabase/process \
+            -H "Content-Type: application/json" \
+            -d '{"input": "test metabase query"}' | jq '.'
+        ;;
+
+    "help"|"-h"|"--help")
+        echo "Metabase MCP Bridge Manager"
+        echo "Usage: $0 <command>"
+        echo ""
+        echo "Commands:"
+        echo "  start     Start bridge server"
+        echo "  stop      Stop bridge server"
+        echo "  restart   Restart bridge server"
+        echo "  status    Show bridge status"
+        echo "  logs      Show bridge logs"
+        echo "  config    Show configuration"
+        echo "  health    Check bridge health"
+        echo "  metrics   Show performance metrics"
+        echo "  test      Test bridge functionality"
+        echo "  help      Show this help"
+        ;;
+
+    *)
+        echo "Unknown command: $1"
+        echo "Use 'help' to see available commands"
+        exit 1
+        ;;
+esac
+EOF
+
+  - curtin in-target -- chmod +x /home/$USERNAME/.local/share/metabase-bridge/bridge-manager.sh
+
+  # Create bridge validation script
+  - curtin in-target -- cat > /home/$USERNAME/.local/share/metabase-bridge/validate-bridge.sh << 'EOF'
+#!/bin/bash
+# Validate Metabase MCP Bridge Integration
+
+echo "Validating Metabase MCP Bridge Integration..."
+echo "══════════════════════════════════════════════"
+
+# Check bridge service
+if systemctl is-active --quiet metabase-bridge; then
+    echo "Bridge service is running"
+else
+    echo "Bridge service is not running"
+fi
+
+# Check bridge configuration
+if [[ -f "/home/$USER/.local/share/metabase-bridge/config/bridge.json" ]]; then
+    echo "Bridge configuration exists"
+else
+    echo "Bridge configuration missing"
+fi
+
+# Check bridge scripts
+if [[ -f "/home/$USER/.local/share/metabase-bridge/bridge-manager.sh" ]]; then
+    echo "Bridge management script exists"
+else
+    echo "Bridge management script missing"
+fi
+
+# Check API connectivity
+if curl -s --max-time 5 "http://localhost:3000/health" >/dev/null 2>&1; then
+    echo "Bridge API is accessible"
+else
+    echo "Bridge API is not accessible"
+fi
+
+# Check ecosystem integrations
+echo ""
+echo "Checking Ecosystem Integrations:"
+
+# Apple ecosystem
+if curl -s --max-time 3 "https://developer.apple.com" >/dev/null 2>&1; then
+    echo "Apple ecosystem accessible"
+else
+    echo "Apple ecosystem check failed"
+fi
+
+# Node.js ecosystem
+if command -v node >/dev/null 2>&1; then
+    echo "Node.js runtime available"
+else
+    echo "Node.js runtime not found"
+fi
+
+echo ""
+echo "Bridge validation complete!"
+echo ""
+echo "Quick start:"
+echo "1. Check status: ~/.local/share/metabase-bridge/bridge-manager.sh status"
+echo "2. View logs: ~/.local/share/metabase-bridge/bridge-manager.sh logs"
+echo "3. Test functionality: ~/.local/share/metabase-bridge/bridge-manager.sh test"
+echo ""
+echo "Available endpoints:"
+echo "  • Health: http://localhost:3000/health"
+echo "  • Metrics: http://localhost:3000/api/v1/metrics"
+echo "  • Process: http://localhost:3000/api/v1/metabase/process"
+EOF
+
+  - curtin in-target -- chmod +x /home/$USERNAME/.local/share/metabase-bridge/validate-bridge.sh
+
+  # Set proper ownership
+  - curtin in-target -- chown -R $USERNAME:$USERNAME /home/$USERNAME/.local/share/metabase-bridge
+
+# ===== INTEGRATION INSTRUCTIONS =====
+# To integrate this into autoinstall.yaml:
+#
+# 1. Add bridge_packages to the existing packages section
+# 2. Add bridge_snaps to the existing snaps section
+# 3. Add bridge_late_commands to the late-commands section

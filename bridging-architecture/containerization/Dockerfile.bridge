@@ -1,0 +1,77 @@
+# Metabase MCP Bridge Container - Multi-ecosystem integration
+# Swift-based bridging server with Apple, Node.js, and TypeScript MCP integration
+
+FROM swift:5.9-focal as builder
+
+WORKDIR /build
+
+# Copy package configuration
+COPY Package.swift Package.swift
+
+# Copy source code
+COPY Sources Sources
+
+# Build Swift application
+RUN swift package resolve --verbose
+RUN swift build -c release -Xswiftc -O -Xswiftc -whole-module-optimization
+
+# Runtime stage
+FROM ubuntu:22.04
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libatomic1 \
+    libcurl4-openssl-dev \
+    libedit2 \
+    libgcc-11-dev \
+    libpython3.10 \
+    libsqlite3-0 \
+    libstdc++-11-dev \
+    libxml2-dev \
+    libncurses5-dev \
+    libz3-dev \
+    pkg-config \
+    tzdata \
+    zlib1g-dev \
+    curl \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js for Node-Swift bridge
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs
+
+# Copy built application
+COPY --from=builder /build/.build/release/MetabaseBridgeServer /usr/local/bin/metabase-bridge
+
+# Create non-root user
+RUN useradd -r -s /bin/false metabase
+
+# Create necessary directories
+RUN mkdir -p /app/config /app/logs && \
+    chown -R metabase:metabase /app
+
+# Switch to non-root user
+USER metabase
+
+# Set working directory
+WORKDIR /app
+
+# Copy configuration files
+COPY --chown=metabase:metabase config/ /app/config/
+
+# Expose ports
+EXPOSE 3000 8080 8443
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Environment variables
+ENV METABASE_BRIDGE_CONFIG=/app/config/bridge.json
+ENV METABASE_BRIDGE_LOG_LEVEL=info
+ENV METABASE_URL=http://localhost:3000
+ENV NODE_ENV=production
+
+# Default command
+CMD ["/usr/local/bin/metabase-bridge", "--port", "3000", "--host", "::"]

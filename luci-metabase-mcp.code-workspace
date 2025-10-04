@@ -1,0 +1,47 @@
+{
+	"folders": [
+		{
+			"name": "luci-metabase-mcp",
+			"path": "."
+		},
+		{
+			"name": "buildtools",
+			"path": "buildtools"
+		},
+		{
+			"name": "zeropoint_training_montetization",
+			"path": "../../../Desktop/zeropoint_training_montetization"
+		},
+		{
+			"name": "hedera_council",
+			"path": "../../../Desktop/hedera_council"
+		},
+		{
+			"name": "swift-luci-metabase",
+			"path": "swift-luci-metabase"
+		},
+		{
+			"name": "luci-runme",
+			"path": "luci-runme"
+		},
+		{
+			"path": "../CAAS-kubernetes/interplanetary-preservation"
+		},
+		{
+			"path": "../luci_hashgraph"
+		}
+	],
+	"settings": {
+		"typescript.tsdk": "node_modules/typescript/lib",
+		"typescript.enablePromptUseWorkspaceTsdk": true,
+		"java.project.sourcePaths": [
+			""
+		]
+	},
+	"extensions": {
+		"recommendations": [
+			"runem.lit-plugin",
+			"stateful.runme"
+		]
+	}
+}
