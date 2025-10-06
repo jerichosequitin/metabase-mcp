@@ -3,24 +3,27 @@
 # Implements BRIDGING-ARCHITECTURE.md patterns for Apple ↔ Linux ↔ Web3 ↔ LuciVerse
 
 # ============================================================================
-# Stage 1: Swift Build Environment
+# Stage 1: Swift Build Environment with Static Linking Support
 # ============================================================================
-FROM docker.io/swift:5.9-focal as swift-builder
+FROM docker.io/swift:6.0-jammy as swift-builder
 
 LABEL stage="swift-builder"
-LABEL description="Swift-NIO bridge components build"
+LABEL description="Swift-NIO bridge components build with static linking"
 
 WORKDIR /build/swift
 
-# Install Swift build dependencies
+# Install Swift build dependencies for static linking
 RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    git \
     libatomic1 \
     libcurl4-openssl-dev \
     libedit2 \
-    libgcc-11-dev \
+    libgcc-12-dev \
     libpython3.10 \
     libsqlite3-0 \
-    libstdc++-11-dev \
+    libstdc++-12-dev \
     libxml2-dev \
     libncurses5-dev \
     libz3-dev \
@@ -28,12 +31,27 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Swift bridge components (will be created)
+# Install Static Linux SDK for musl-based static linking
+# This enables fully static binaries with no external dependencies
+RUN curl -L https://download.swift.org/swift-6.0-release/static-sdk/swift-6.0-RELEASE/swift-6.0-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz \
+    -o /tmp/static-sdk.tar.gz && \
+    mkdir -p /opt/swift-static-sdk && \
+    tar -xzf /tmp/static-sdk.tar.gz -C /opt/swift-static-sdk && \
+    rm /tmp/static-sdk.tar.gz
+
+# Copy Swift bridge components
 COPY swift-bridge/ ./
 
-# Build Swift bridge application
+# Resolve dependencies
 RUN swift package resolve
-RUN swift build -c release -Xswiftc -O
+
+# Build with static linking using musl libc
+# This creates a fully statically linked executable with no runtime dependencies
+RUN swift build -c release \
+    --static-swift-stdlib \
+    -Xswiftc -static-executable \
+    -Xswiftc -O \
+    -Xlinker -s
 
 # ============================================================================
 # Stage 2: Bazel Build Environment
@@ -119,21 +137,10 @@ RUN apt-get update && apt-get install -y \
     && apt-get update \
     && apt-get install -y nodejs
 
-# Install Swift runtime dependencies
-RUN apt-get install -y \
-    libatomic1 \
-    libcurl4-openssl-dev \
-    libedit2 \
-    libgcc-11-dev \
-    libpython3.10 \
-    libsqlite3-0 \
-    libstdc++-11-dev \
-    libxml2-dev \
-    libncurses5-dev \
-    libz3-dev \
-    zlib1g-dev
+# NOTE: Swift runtime dependencies are NOT needed because we're using static linking
+# The Swift bridge binary is fully self-contained with musl libc
 
-# Install additional utilities for bridge operations
+# Install minimal utilities for bridge operations
 RUN apt-get install -y \
     jq \
     netcat \

@@ -1,0 +1,64 @@
+# Example Terraform Variables File
+# Copy to terraform.tfvars and customize for your environment
+
+# Environment configuration
+environment = "development"
+
+# Swift version to use
+swift_version = "6.0.0"  # or "latest" or "main-snapshot"
+
+# Enable static SDK installation
+enable_static_sdk = true
+
+# Target distributions for SDK generation
+sdk_target_distributions = [
+  {
+    name    = "ubuntu"
+    version = "22.04"
+    arch    = "x86_64"
+  },
+  {
+    name    = "ubuntu"
+    version = "22.04"
+    arch    = "aarch64"
+  },
+  {
+    name    = "debian"
+    version = "12"
+    arch    = "x86_64"
+  },
+  {
+    name    = "amazonlinux"
+    version = "2023"
+    arch    = "x86_64"
+  }
+]
+
+# Container runtime (docker or podman)
+container_runtime = "docker"
+
+# Workspace path (will be created if doesn't exist)
+workspace_path = "~/.luci-swift-workspace"
+
+# Extra libraries to include in SDKs
+extra_libraries = [
+  "libssl-dev",
+  "libcurl4-openssl-dev",
+  "zlib1g-dev",
+  "libsqlite3-dev",
+  "libpq-dev",        # PostgreSQL
+  "libmysqlclient-dev" # MySQL
+]
+
+# Enable persistent Docker container
+enable_docker_container = false
+
+# Auto-generate SDKs on apply
+auto_generate_sdks = true
+
+# Proxy settings (optional)
+# proxy_settings = {
+#   http_proxy  = "http://proxy.company.com:8080"
+#   https_proxy = "http://proxy.company.com:8080"
+#   no_proxy    = "localhost,127.0.0.1,.company.com"
+# }

@@ -74,9 +74,22 @@ swift-setup: ## Setup Swift bridge components
 	@echo "Setting up Swift bridge..."
 	@bash scripts/setup-swift-bridge.sh
 
-swift-build: ## Build Swift bridge locally
+swift-build: ## Build Swift bridge locally (dynamic)
 	@echo "Building Swift bridge..."
 	@cd swift-bridge && swift build -c release
+
+swift-build-static: ## Build Swift bridge as static Linux binary
+	@echo "Building static Swift bridge for Linux..."
+	@bash scripts/build-static-swift.sh x86_64 release
+
+swift-build-static-arm64: ## Build static Swift bridge for ARM64 Linux
+	@echo "Building static Swift bridge for ARM64 Linux..."
+	@bash scripts/build-static-swift.sh aarch64 release
+
+swift-build-static-all: ## Build static binaries for all architectures
+	@echo "Building static Swift bridge for all architectures..."
+	@bash scripts/build-static-swift.sh x86_64 release
+	@bash scripts/build-static-swift.sh aarch64 release
 
 swift-test: ## Run Swift bridge tests
 	@echo "Running Swift tests..."
@@ -109,6 +122,12 @@ validate: ## Validate configuration and environment
 	@echo "Validating environment..."
 	@test -f .env || (echo "Error: .env file not found. Run 'make env-setup'" && exit 1)
 	@echo "Environment configuration valid"
+
+verify-deps: ## Verify all dependencies and tooling
+	@bash scripts/verify-dependencies.sh
+
+setup-toolchain: ## Setup Swift toolchain and dependencies
+	@bash scripts/setup-toolchain.sh
 
 install: env-setup build ## Complete installation (setup env + build)
 	@echo "Installation complete"

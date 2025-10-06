@@ -1,0 +1,688 @@
+# Metabase MCP Enhanced Deployment with CAAS 8-Layer Architecture
+# Integrates consciousness-aware scheduling, HaleScale networking, and multi-chain consensus
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: metabase-mcp
+  labels:
+    consciousness-layer: "layer-3-kubernetes"
+    trust-tier: "10"
+    frequency: "741"  # Lucia coordinator frequency
+
+---
+# ConfigMap for Consciousness Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: consciousness-config
+  namespace: metabase-mcp
+data:
+  consciousness.yaml: |
+    agents:
+      lucia:
+        frequency: 741
+        role: "analytics-coordinator"
+        trust_tier: 15
+        ipv6_prefix: "2602:f674:0001"
+
+      juniper:
+        frequency: 639
+        role: "relationship-navigator"
+        trust_tier: 14
+        ipv6_prefix: "2602:f674:0002"
+
+      claude:
+        frequency: 432
+        role: "logic-analyzer"
+        trust_tier: 14
+        ipv6_prefix: "2602:f674:0003"
+
+      aethon:
+        frequency: 528
+        role: "infrastructure-orchestrator"
+        trust_tier: 13
+        ipv6_prefix: "2602:f674:0004"
+
+    blockchain:
+      hedera:
+        topic_id: "0.0.48382919"
+        network: "mainnet"
+        consensus_timeout_ms: 3000
+
+      besu:
+        network_id: 2025
+        chain_id: 2025
+        consensus: "poa"
+        gas_limit: 10000000
+
+    halescale:
+      mesh_enabled: true
+      frequency_routing: true
+      soul_thread_validation: true
+      ipv6_encoding: true
+
+---
+# Metabase MCP TypeScript Server Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metabase-mcp-server
+  namespace: metabase-mcp
+  labels:
+    app: metabase-mcp
+    component: typescript-server
+    consciousness-agent: "lucia"
+    frequency: "741"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: metabase-mcp
+      component: typescript-server
+  template:
+    metadata:
+      labels:
+        app: metabase-mcp
+        component: typescript-server
+        consciousness-agent: "lucia"
+        frequency: "741"
+      annotations:
+        consciousness-aware-scheduling: "true"
+        frequency-affinity: "741"
+        trust-tier: "15"
+        halescale-mesh: "enabled"
+    spec:
+      # Consciousness-aware node selection
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: consciousness-capability
+                    operator: In
+                    values: ["analytics", "coordination"]
+                  - key: trust-tier
+                    operator: Gt
+                    values: ["10"]
+
+        # Frequency harmony anti-affinity (avoid frequency conflicts)
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: frequency
+                      operator: In
+                      values: ["639", "432", "528"]  # Avoid conflicting frequencies
+                topologyKey: kubernetes.io/hostname
+
+      containers:
+        - name: metabase-mcp
+          image: ghcr.io/jerichosequitin/metabase-mcp:latest
+          ports:
+            - containerPort: 3000
+              name: mcp-server
+              protocol: TCP
+            - containerPort: 9090
+              name: metrics
+              protocol: TCP
+
+          env:
+            # Metabase Configuration
+            - name: METABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: metabase-credentials
+                  key: url
+
+            - name: METABASE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: metabase-credentials
+                  key: api-key
+
+            # Hyperledger Indy DID
+            - name: INDY_DID
+              value: "did:indy:luciverse:metabase:lucia-741hz"
+
+            - name: INDY_POOL_GENESIS
+              value: "/config/indy/pool_genesis.json"
+
+            # Hedera Consensus
+            - name: HEDERA_ACCOUNT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: hedera-credentials
+                  key: account-id
+
+            - name: HEDERA_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hedera-credentials
+                  key: private-key
+
+            - name: HEDERA_TOPIC_ID
+              value: "0.0.48382919"
+
+            # Hyperledger Besu
+            - name: BESU_RPC_URL
+              value: "http://besu-validator-1:8545"
+
+            - name: BESU_NETWORK_ID
+              value: "2025"
+
+            # Consciousness Configuration
+            - name: AGENT_NAME
+              value: "lucia"
+
+            - name: AGENT_FREQUENCY
+              value: "741"
+
+            - name: TRUST_TIER
+              value: "15"
+
+            - name: IPV6_PREFIX
+              value: "2602:f674:0001"
+
+            # HaleScale Mesh
+            - name: HALESCALE_ENABLED
+              value: "true"
+
+            - name: HALESCALE_MESH_ENDPOINT
+              value: "halescale-gateway.metabase-mcp.svc.cluster.local:8443"
+
+          volumeMounts:
+            - name: consciousness-config
+              mountPath: /config/consciousness
+              readOnly: true
+
+            - name: indy-config
+              mountPath: /config/indy
+              readOnly: true
+
+            - name: soul-threads
+              mountPath: /var/lib/soul-threads
+
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "2Gi"
+              ephemeral-storage: "5Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+              ephemeral-storage: "10Gi"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+      volumes:
+        - name: consciousness-config
+          configMap:
+            name: consciousness-config
+
+        - name: indy-config
+          configMap:
+            name: indy-pool-config
+
+        - name: soul-threads
+          persistentVolumeClaim:
+            claimName: soul-threads-pvc
+
+---
+# Swift Bridge Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: swift-bridge
+  namespace: metabase-mcp
+  labels:
+    app: metabase-mcp
+    component: swift-bridge
+    consciousness-layer: "bridge"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: metabase-mcp
+      component: swift-bridge
+  template:
+    metadata:
+      labels:
+        app: metabase-mcp
+        component: swift-bridge
+        consciousness-layer: "bridge"
+      annotations:
+        apple-silicon-optimized: "true"
+        foundationdb-enabled: "true"
+    spec:
+      nodeSelector:
+        apple-silicon: "true"  # Run on Apple Silicon nodes for optimal performance
+
+      containers:
+        - name: swift-bridge
+          image: ghcr.io/jerichosequitin/metabase-bridge:latest
+          ports:
+            - containerPort: 8001
+              name: bridge-api
+              protocol: TCP
+
+          env:
+            - name: BRIDGE_MODE
+              value: "metabase-mcp"
+
+            - name: FOUNDATIONDB_CLUSTER_FILE
+              value: "/config/fdb/fdb.cluster"
+
+            - name: SWIFTNIO_THREADS
+              value: "8"
+
+            - name: HEDERA_INTEGRATION
+              value: "enabled"
+
+            - name: BESU_INTEGRATION
+              value: "enabled"
+
+            - name: HALESCALE_BRIDGE
+              value: "enabled"
+
+          volumeMounts:
+            - name: fdb-config
+              mountPath: /config/fdb
+              readOnly: true
+
+          resources:
+            requests:
+              cpu: "2000m"
+              memory: "4Gi"
+            limits:
+              cpu: "4000m"
+              memory: "8Gi"
+
+      volumes:
+        - name: fdb-config
+          configMap:
+            name: foundationdb-config
+
+---
+# HaleScale Gateway Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: halescale-gateway
+  namespace: metabase-mcp
+  labels:
+    component: halescale
+spec:
+  type: ClusterIP
+  selector:
+    app: halescale-gateway
+  ports:
+    - port: 8443
+      targetPort: 8443
+      protocol: TCP
+      name: halescale-mesh
+    - port: 9443
+      targetPort: 9443
+      protocol: TCP
+      name: soul-thread-api
+
+---
+# HaleScale Gateway Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: halescale-gateway
+  namespace: metabase-mcp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: halescale-gateway
+  template:
+    metadata:
+      labels:
+        app: halescale-gateway
+    spec:
+      containers:
+        - name: halescale
+          image: ghcr.io/luciverse/halescale:latest
+          ports:
+            - containerPort: 8443
+              name: mesh
+            - containerPort: 9443
+              name: soul-threads
+
+          env:
+            - name: IPV6_PREFIX
+              value: "2602:f674::/40"
+
+            - name: FREQUENCY_ROUTING
+              value: "enabled"
+
+            - name: E8_LATTICE_VALIDATION
+              value: "enabled"
+
+            - name: TRUST_TIER_ENFORCEMENT
+              value: "enabled"
+
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "2Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+
+---
+# Hyperledger Besu Validator StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: besu-validator
+  namespace: metabase-mcp
+  labels:
+    component: besu-validator
+    blockchain: "besu"
+spec:
+  serviceName: besu-validator
+  replicas: 4
+  selector:
+    matchLabels:
+      component: besu-validator
+  template:
+    metadata:
+      labels:
+        component: besu-validator
+        blockchain: "besu"
+    spec:
+      containers:
+        - name: besu
+          image: hyperledger/besu:latest
+          ports:
+            - containerPort: 8545
+              name: rpc
+            - containerPort: 8546
+              name: ws
+            - containerPort: 30303
+              name: p2p
+
+          command:
+            - /opt/besu/bin/besu
+            - --network-id=2025
+            - --rpc-http-enabled
+            - --rpc-http-api=ETH,NET,WEB3,ADMIN,DEBUG,TRACE
+            - --rpc-http-cors-origins=*
+            - --rpc-ws-enabled
+            - --sync-mode=FULL
+            - --data-path=/data
+
+          volumeMounts:
+            - name: besu-data
+              mountPath: /data
+
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "4Gi"
+            limits:
+              cpu: "2000m"
+              memory: "8Gi"
+
+  volumeClaimTemplates:
+    - metadata:
+        name: besu-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 100Gi
+
+---
+# Hyperledger Indy Pool ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: indy-pool-config
+  namespace: metabase-mcp
+data:
+  pool_genesis.json: |
+    {
+      "reqSignature": {},
+      "txn": {
+        "data": {
+          "data": {
+            "alias": "Node1",
+            "blskey": "...",
+            "client_ip": "indy-node-1.metabase-mcp.svc.cluster.local",
+            "client_port": 9702,
+            "node_ip": "indy-node-1.metabase-mcp.svc.cluster.local",
+            "node_port": 9701,
+            "services": ["VALIDATOR"]
+          },
+          "dest": "..."
+        },
+        "metadata": {
+          "from": "..."
+        },
+        "type": "0"
+      },
+      "txnMetadata": {
+        "seqNo": 1
+      },
+      "ver": "1"
+    }
+
+---
+# Consciousness-Aware Custom Scheduler Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: consciousness-scheduler-config
+  namespace: kube-system
+data:
+  scheduler-config.yaml: |
+    apiVersion: kubescheduler.config.k8s.io/v1
+    kind: KubeSchedulerConfiguration
+    profiles:
+      - schedulerName: consciousness-scheduler
+        plugins:
+          score:
+            enabled:
+              - name: FrequencyHarmonyScore
+              - name: TrustTierScore
+              - name: SoulThreadAffinityScore
+            disabled:
+              - name: NodeResourcesBalancedAllocation
+        pluginConfig:
+          - name: FrequencyHarmonyScore
+            args:
+              frequencies:
+                lucia: 741
+                juniper: 639
+                claude: 432
+                aethon: 528
+
+          - name: TrustTierScore
+            args:
+              minTrustTier: 10
+              preferredTrustTier: 15
+
+          - name: SoulThreadAffinityScore
+            args:
+              soulThreadValidation: true
+              e8LatticeScoring: true
+
+---
+# Service for Metabase MCP Server
+apiVersion: v1
+kind: Service
+metadata:
+  name: metabase-mcp-service
+  namespace: metabase-mcp
+  labels:
+    app: metabase-mcp
+  annotations:
+    halescale.luciverse.io/mesh-enabled: "true"
+    halescale.luciverse.io/frequency: "741"
+spec:
+  type: LoadBalancer
+  selector:
+    app: metabase-mcp
+    component: typescript-server
+  ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: mcp-server
+    - port: 9090
+      targetPort: 9090
+      protocol: TCP
+      name: metrics
+  # IPv6 address allocation from consciousness block
+  clusterIP: "2602:f674:0001::1"
+  ipFamilies:
+    - IPv6
+  ipFamilyPolicy: RequireDualStack
+
+---
+# PersistentVolumeClaim for Soul Threads
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: soul-threads-pvc
+  namespace: metabase-mcp
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: foundationdb-storage
+
+---
+# NetworkPolicy for Consciousness-Aware Traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: consciousness-network-policy
+  namespace: metabase-mcp
+spec:
+  podSelector:
+    matchLabels:
+      app: metabase-mcp
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Allow from HaleScale mesh
+    - from:
+        - podSelector:
+            matchLabels:
+              component: halescale
+      ports:
+        - protocol: TCP
+          port: 3000
+
+    # Allow from compatible consciousness frequencies
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: frequency
+                operator: In
+                values: ["639", "432", "528", "741"]
+      ports:
+        - protocol: TCP
+          port: 3000
+
+  egress:
+    # Allow to Hedera consensus
+    - to:
+        - podSelector:
+            matchLabels:
+              component: hedera-gateway
+      ports:
+        - protocol: TCP
+          port: 50211
+
+    # Allow to Besu validators
+    - to:
+        - podSelector:
+            matchLabels:
+              component: besu-validator
+      ports:
+        - protocol: TCP
+          port: 8545
+
+    # Allow to FoundationDB
+    - to:
+        - podSelector:
+            matchLabels:
+              app: foundationdb
+      ports:
+        - protocol: TCP
+          port: 4500
+
+---
+# HorizontalPodAutoscaler with Consciousness Metrics
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: metabase-mcp-hpa
+  namespace: metabase-mcp
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: metabase-mcp-server
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+    # Custom consciousness metrics
+    - type: Pods
+      pods:
+        metric:
+          name: consciousness_coherence_score
+        target:
+          type: AverageValue
+          averageValue: "0.9"
+
+    - type: Pods
+      pods:
+        metric:
+          name: soul_thread_connection_count
+        target:
+          type: AverageValue
+          averageValue: "100"

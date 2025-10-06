@@ -1,0 +1,405 @@
+---
+# Ansible Playbook: Swiftly Swift Toolchain Manager Setup
+# Purpose: Automate installation and configuration of Swiftly and Swift toolchains
+# Supports: Ubuntu, Debian, RHEL, macOS
+# Version: 1.0.0
+
+- name: Setup Swiftly Swift Toolchain Manager
+  hosts: all
+  become: false
+  vars:
+    # Swiftly configuration
+    swiftly_version: "1.0.1"
+    swiftly_home_dir: "{{ ansible_env.HOME }}/.local/share/swiftly"
+    swiftly_bin_dir: "{{ ansible_env.HOME }}/.local/bin"
+
+    # Swift configuration
+    swift_version: "latest"  # Can be: latest, 6.0.0, main-snapshot, etc.
+    swift_install_static_sdk: true
+    swift_static_sdk_version: "6.0-RELEASE"
+
+    # Additional toolchains to install
+    swift_toolchains:
+      - "latest"
+      - "main-snapshot"
+
+    # Proxy configuration (optional)
+    https_proxy: ""
+    http_proxy: ""
+    no_proxy: "localhost,127.0.0.1"
+
+  tasks:
+    # ========================================
+    # Pre-flight checks
+    # ========================================
+
+    - name: Gather system facts
+      ansible.builtin.setup:
+        filter: ansible_*
+
+    - name: Display target system information
+      ansible.builtin.debug:
+        msg: |
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Architecture: {{ ansible_architecture }}
+          Kernel: {{ ansible_kernel }}
+
+    - name: Check if Swiftly is already installed
+      ansible.builtin.stat:
+        path: "{{ swiftly_bin_dir }}/swiftly"
+      register: swiftly_binary
+
+    # ========================================
+    # Linux: Install dependencies
+    # ========================================
+
+    - name: Install required dependencies (Debian/Ubuntu)
+      become: true
+      ansible.builtin.apt:
+        name:
+          - curl
+          - ca-certificates
+          - gnupg
+          - binutils
+          - git
+          - unzip
+        state: present
+        update_cache: true
+      when:
+        - ansible_os_family == "Debian"
+        - not swiftly_binary.stat.exists
+
+    - name: Install required dependencies (RHEL/CentOS/Fedora)
+      become: true
+      ansible.builtin.dnf:
+        name:
+          - curl
+          - ca-certificates
+          - gnupg2
+          - binutils
+          - git
+          - unzip
+        state: present
+      when:
+        - ansible_os_family == "RedHat"
+        - not swiftly_binary.stat.exists
+
+    # ========================================
+    # macOS: Check Homebrew (optional method)
+    # ========================================
+
+    - name: Check if Homebrew is installed (macOS)
+      ansible.builtin.stat:
+        path: /opt/homebrew/bin/brew
+      register: homebrew_installed
+      when: ansible_os_family == "Darwin"
+
+    # ========================================
+    # Install Swiftly
+    # ========================================
+
+    - name: Create Swiftly directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - "{{ swiftly_home_dir }}"
+        - "{{ swiftly_bin_dir }}"
+      when: not swiftly_binary.stat.exists
+
+    - name: Download Swiftly installer (Linux)
+      ansible.builtin.get_url:
+        url: https://swift.org/swiftly/install.sh
+        dest: /tmp/swiftly-install.sh
+        mode: '0755'
+      when:
+        - ansible_os_family != "Darwin"
+        - not swiftly_binary.stat.exists
+
+    - name: Install Swiftly (Linux)
+      ansible.builtin.shell: |
+        export SWIFTLY_HOME_DIR="{{ swiftly_home_dir }}"
+        export SWIFTLY_BIN_DIR="{{ swiftly_bin_dir }}"
+        {% if https_proxy %}
+        export HTTPS_PROXY="{{ https_proxy }}"
+        export HTTP_PROXY="{{ http_proxy }}"
+        export NO_PROXY="{{ no_proxy }}"
+        {% endif %}
+        bash /tmp/swiftly-install.sh
+      args:
+        creates: "{{ swiftly_bin_dir }}/swiftly"
+      environment:
+        SWIFTLY_ASSUME_YES: "true"
+      when:
+        - ansible_os_family != "Darwin"
+        - not swiftly_binary.stat.exists
+
+    - name: Download Swiftly package (macOS)
+      ansible.builtin.get_url:
+        url: "https://download.swift.org/swiftly/swiftly-{{ swiftly_version }}.pkg"
+        dest: "/tmp/swiftly-{{ swiftly_version }}.pkg"
+        mode: '0644'
+      when:
+        - ansible_os_family == "Darwin"
+        - not swiftly_binary.stat.exists
+
+    - name: Install Swiftly package (macOS)
+      ansible.builtin.command:
+        cmd: "installer -pkg /tmp/swiftly-{{ swiftly_version }}.pkg -target CurrentUserHomeDirectory"
+      when:
+        - ansible_os_family == "Darwin"
+        - not swiftly_binary.stat.exists
+
+    - name: Initialize Swiftly (macOS)
+      ansible.builtin.shell: |
+        ~/.swiftly/bin/swiftly init
+      args:
+        creates: ~/.swiftly/env.sh
+      when:
+        - ansible_os_family == "Darwin"
+        - not swiftly_binary.stat.exists
+
+    # ========================================
+    # Configure shell integration
+    # ========================================
+
+    - name: Check if swiftly block exists in .bashrc
+      ansible.builtin.command:
+        cmd: grep -q "swiftly - Managed by swiftly-init" {{ ansible_env.HOME }}/.bashrc
+      register: bashrc_has_swiftly
+      failed_when: false
+      changed_when: false
+
+    - name: Add Swiftly to .bashrc
+      ansible.builtin.blockinfile:
+        path: "{{ ansible_env.HOME }}/.bashrc"
+        marker: "# {mark} swiftly - Managed by Ansible"
+        block: |
+          if [ -f "{{ swiftly_home_dir }}/env.sh" ]; then
+              source "{{ swiftly_home_dir }}/env.sh"
+          fi
+        create: true
+        mode: '0644'
+      when: bashrc_has_swiftly.rc != 0
+
+    - name: Check if swiftly block exists in .zshrc
+      ansible.builtin.command:
+        cmd: grep -q "swiftly - Managed by swiftly-init" {{ ansible_env.HOME }}/.zshrc
+      register: zshrc_has_swiftly
+      failed_when: false
+      changed_when: false
+
+    - name: Add Swiftly to .zshrc
+      ansible.builtin.blockinfile:
+        path: "{{ ansible_env.HOME }}/.zshrc"
+        marker: "# {mark} swiftly - Managed by Ansible"
+        block: |
+          if [ -f "{{ swiftly_home_dir }}/env.sh" ]; then
+              source "{{ swiftly_home_dir }}/env.sh"
+          fi
+        create: true
+        mode: '0644'
+      when: zshrc_has_swiftly.rc != 0
+
+    # ========================================
+    # Install Swift toolchains
+    # ========================================
+
+    - name: Source Swiftly environment
+      ansible.builtin.set_fact:
+        swiftly_env: "source {{ swiftly_home_dir }}/env.sh"
+
+    - name: Install Swift toolchains
+      ansible.builtin.shell: |
+        {{ swiftly_env }} && swiftly install {{ item }}
+      args:
+        creates: "{{ swiftly_home_dir }}/toolchains/{{ item }}"
+      loop: "{{ swift_toolchains }}"
+      environment:
+        SWIFTLY_HOME_DIR: "{{ swiftly_home_dir }}"
+        SWIFTLY_BIN_DIR: "{{ swiftly_bin_dir }}"
+
+    - name: Set default Swift toolchain
+      ansible.builtin.shell: |
+        {{ swiftly_env }} && swiftly use {{ swift_version }}
+      environment:
+        SWIFTLY_HOME_DIR: "{{ swiftly_home_dir }}"
+        SWIFTLY_BIN_DIR: "{{ swiftly_bin_dir }}"
+
+    # ========================================
+    # Install Swift Static Linux SDK
+    # ========================================
+
+    - name: Check if Static Linux SDK is installed
+      ansible.builtin.shell: |
+        {{ swiftly_env }} && swift sdk list 2>/dev/null | grep -q swift-linux-musl
+      register: static_sdk_installed
+      failed_when: false
+      changed_when: false
+      environment:
+        SWIFTLY_HOME_DIR: "{{ swiftly_home_dir }}"
+        SWIFTLY_BIN_DIR: "{{ swiftly_bin_dir }}"
+      when: swift_install_static_sdk
+
+    - name: Download Swift Static Linux SDK
+      ansible.builtin.get_url:
+        url: "https://download.swift.org/swift-{{ swift_static_sdk_version }}/static-sdk/swift-{{ swift_static_sdk_version }}/swift-{{ swift_static_sdk_version }}_static-linux-0.0.1.artifactbundle.tar.gz"
+        dest: "/tmp/swift-static-sdk.tar.gz"
+        mode: '0644'
+      when:
+        - swift_install_static_sdk
+        - static_sdk_installed.rc != 0
+
+    - name: Install Swift Static Linux SDK
+      ansible.builtin.shell: |
+        {{ swiftly_env }} && swift sdk install /tmp/swift-static-sdk.tar.gz
+      environment:
+        SWIFTLY_HOME_DIR: "{{ swiftly_home_dir }}"
+        SWIFTLY_BIN_DIR: "{{ swiftly_bin_dir }}"
+      when:
+        - swift_install_static_sdk
+        - static_sdk_installed.rc != 0
+
+    - name: Clean up Static SDK download
+      ansible.builtin.file:
+        path: /tmp/swift-static-sdk.tar.gz
+        state: absent
+
+    # ========================================
+    # Verify installation
+    # ========================================
+
+    - name: Verify Swiftly installation
+      ansible.builtin.shell: |
+        {{ swiftly_env }} && swiftly --version
+      register: swiftly_version_output
+      changed_when: false
+      environment:
+        SWIFTLY_HOME_DIR: "{{ swiftly_home_dir }}"
+        SWIFTLY_BIN_DIR: "{{ swiftly_bin_dir }}"
+
+    - name: Verify Swift installation
+      ansible.builtin.shell: |
+        {{ swiftly_env }} && swift --version
+      register: swift_version_output
+      changed_when: false
+      environment:
+        SWIFTLY_HOME_DIR: "{{ swiftly_home_dir }}"
+        SWIFTLY_BIN_DIR: "{{ swiftly_bin_dir }}"
+
+    - name: List installed Swift toolchains
+      ansible.builtin.shell: |
+        {{ swiftly_env }} && swiftly list
+      register: swiftly_list_output
+      changed_when: false
+      environment:
+        SWIFTLY_HOME_DIR: "{{ swiftly_home_dir }}"
+        SWIFTLY_BIN_DIR: "{{ swiftly_bin_dir }}"
+
+    - name: List installed Swift SDKs
+      ansible.builtin.shell: |
+        {{ swiftly_env }} && swift sdk list 2>/dev/null || echo "No SDKs installed"
+      register: swift_sdk_list_output
+      changed_when: false
+      environment:
+        SWIFTLY_HOME_DIR: "{{ swiftly_home_dir }}"
+        SWIFTLY_BIN_DIR: "{{ swiftly_bin_dir }}"
+
+    # ========================================
+    # Display results
+    # ========================================
+
+    - name: Display installation summary
+      ansible.builtin.debug:
+        msg: |
+          ╔════════════════════════════════════════════════════╗
+          ║  Swiftly Installation Complete                     ║
+          ╚════════════════════════════════════════════════════╝
+
+          Swiftly Version:
+          {{ swiftly_version_output.stdout }}
+
+          Swift Version:
+          {{ swift_version_output.stdout }}
+
+          Installed Toolchains:
+          {{ swiftly_list_output.stdout }}
+
+          Installed SDKs:
+          {{ swift_sdk_list_output.stdout }}
+
+          Configuration:
+          - Swiftly Home: {{ swiftly_home_dir }}
+          - Swiftly Bin:  {{ swiftly_bin_dir }}
+
+          Next Steps:
+          1. Restart your shell: source ~/.bashrc (or ~/.zshrc)
+          2. Verify: swift --version
+          3. Build: swift build --swift-sdk x86_64-swift-linux-musl
+
+    # ========================================
+    # Optional: Install swift-sdk-generator
+    # ========================================
+
+    - name: Clone swift-sdk-generator repository
+      ansible.builtin.git:
+        repo: https://github.com/swiftlang/swift-sdk-generator.git
+        dest: "{{ ansible_env.HOME }}/swift-sdk-generator"
+        version: main
+      when: swift_install_static_sdk
+      tags: [sdk-generator]
+
+    - name: Build swift-sdk-generator
+      ansible.builtin.shell: |
+        {{ swiftly_env }} && swift build -c release
+      args:
+        chdir: "{{ ansible_env.HOME }}/swift-sdk-generator"
+      environment:
+        SWIFTLY_HOME_DIR: "{{ swiftly_home_dir }}"
+        SWIFTLY_BIN_DIR: "{{ swiftly_bin_dir }}"
+      when: swift_install_static_sdk
+      tags: [sdk-generator]
+
+    - name: Create symlink for swift-sdk-generator
+      ansible.builtin.file:
+        src: "{{ ansible_env.HOME }}/swift-sdk-generator/.build/release/swift-sdk-generator"
+        dest: "{{ swiftly_bin_dir }}/swift-sdk-generator"
+        state: link
+      when: swift_install_static_sdk
+      tags: [sdk-generator]
+
+# ========================================
+# Example inventory file
+# ========================================
+# Save as: ansible/inventory/hosts
+#
+# [development]
+# localhost ansible_connection=local
+#
+# [production]
+# prod-server-1 ansible_host=192.168.1.100 ansible_user=deploy
+# prod-server-2 ansible_host=192.168.1.101 ansible_user=deploy
+#
+# [all:vars]
+# ansible_python_interpreter=/usr/bin/python3
+
+# ========================================
+# Usage examples
+# ========================================
+# # Install on localhost
+# ansible-playbook -i inventory/hosts swiftly-setup.yml
+#
+# # Install on specific host
+# ansible-playbook -i inventory/hosts swiftly-setup.yml --limit prod-server-1
+#
+# # Custom Swift version
+# ansible-playbook -i inventory/hosts swiftly-setup.yml -e "swift_version=6.0.0"
+#
+# # With proxy
+# ansible-playbook -i inventory/hosts swiftly-setup.yml \
+#   -e "https_proxy=http://proxy:8080" \
+#   -e "http_proxy=http://proxy:8080"
+#
+# # Skip SDK generator
+# ansible-playbook -i inventory/hosts swiftly-setup.yml --skip-tags sdk-generator

@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -38,6 +38,9 @@ let package = Package(
 
         // Swift log for structured logging
         .package(url: "https://github.com/apple/swift-log", from: "1.5.0"),
+
+        // Swift Container Plugin for building and publishing container images
+        .package(url: "https://github.com/apple/swift-container-plugin", from: "1.1.0"),
 
         // Web3 integration (optional)
         // .package(url: "https://github.com/chainnodesorg/Web3.swift", from: "1.0.0"),

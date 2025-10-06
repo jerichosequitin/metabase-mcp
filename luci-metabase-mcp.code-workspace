@@ -35,7 +35,7 @@
 		"typescript.tsdk": "node_modules/typescript/lib",
 		"typescript.enablePromptUseWorkspaceTsdk": true,
 		"java.project.sourcePaths": [
-			""
+			"buildtools"
 		]
 	},
 	"extensions": {

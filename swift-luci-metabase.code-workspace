@@ -1,0 +1,18 @@
+{
+	"folders": [
+		{
+			"name": "swift-luci-metabase",
+			"path": "../swift-luci-metabase"
+		},
+		{
+			"name": "luci-metabase-mcp",
+			"path": "."
+		}
+	],
+	"settings": {
+		"java.compile.nullAnalysis.mode": "automatic",
+		"java.project.sourcePaths": [
+			""
+		]
+	}
+}
