@@ -1,6 +1,6 @@
 # Metabase MCP Server
 
-[![smithery badge](https://smithery.ai/badge/@jerichosequitin/metabase)](https://smithery.ai/server/@jerichosequitin/metabase)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jerichosequitin/metabase-mcp)
 
 **Version**: 1.0.1
 
@@ -287,7 +287,7 @@ npm run inspector  # MCP Inspector for debugging
 npm run mcpb:build
 ```
 
-Creates `metabase-mcp.mcpb` ready for GitHub Releases.
+Creates `metabase-mcp-{version}.mcpb` (e.g., `metabase-mcp-1.0.1.mcpb`) ready for GitHub Releases.
 
 ## Security Considerations
 
