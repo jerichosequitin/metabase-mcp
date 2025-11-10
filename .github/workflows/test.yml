@@ -165,30 +165,26 @@ jobs:
     - name: Install MCPB CLI
       run: npm install -g @anthropic-ai/mcpb
 
-    - name: Build MCPB packages
+    - name: Build MCPB package
       if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
       run: |
         npm run mcpb:build
-        echo "✅ MCPB packages built successfully"
+        echo "✅ MCPB package built successfully"
         ls -la *.mcpb
 
-    - name: Upload MCPB artifacts
+    - name: Upload MCPB artifact
       if: github.ref == 'refs/heads/master'
       uses: actions/upload-artifact@v4
       with:
-        name: metabase-mcp-mcpb-packages
-        path: |
-          metabase-mcp-api-key.mcpb
-          metabase-mcp-session.mcpb
+        name: metabase-mcp-mcpb-package
+        path: "*.mcpb"
         retention-days: 7
 
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v2
       with:
-        files: |
-          metabase-mcp-api-key.mcpb
-          metabase-mcp-session.mcpb
+        files: "*.mcpb"
         generate_release_notes: true
         name: Release ${{ github.ref_name }}
         body: |
@@ -196,17 +192,13 @@ jobs:
 
           ### MCP Bundle (MCPB) Installation
 
-          Choose the appropriate MCPB package for your authentication method:
-
-          **API Key Authentication (Recommended):**
-          1. Download `metabase-mcp-api-key.mcpb` from the assets below
-          2. Open the file with Claude Desktop to install
-          3. Configure your Metabase URL and API key in Claude Desktop's extension settings
-
-          **Session Authentication (Email/Password):**
-          1. Download `metabase-mcp-session.mcpb` from the assets below
-          2. Open the file with Claude Desktop to install
-          3. Configure your Metabase URL, email, and password in Claude Desktop's extension settings
+          1. Download `metabase-mcp-${{ github.ref_name }}.mcpb` from the assets below
+          2. Open the `.mcpb` file with Claude Desktop to install
+          3. Configure your Metabase instance in Claude Desktop's settings:
+             - **Metabase URL** (required)
+             - **Authentication**: Choose either API key OR email/password
+             - **Export Directory**: Customize where files are saved (defaults to Downloads/Metabase)
+             - **Optional**: Log level, cache TTL, and request timeout settings
 
           ### Manual Installation
 
@@ -220,23 +212,21 @@ jobs:
 
     - name: MCPB Build Summary
       run: |
-        echo "## 📦 MCPB Extension Build Report" >> $GITHUB_STEP_SUMMARY
+        echo "## 📦 MCPB Package Build Report" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "| Status | Details |" >> $GITHUB_STEP_SUMMARY
         echo "|--------|---------|" >> $GITHUB_STEP_SUMMARY
         echo "| Manifest | ✅ Valid |" >> $GITHUB_STEP_SUMMARY
         echo "| Build | ✅ Successful |" >> $GITHUB_STEP_SUMMARY
-        if [ -f metabase-mcp-api-key.mcpb ]; then
-          API_SIZE=$(ls -lh metabase-mcp-api-key.mcpb | awk '{print $5}')
-          echo "| API Key Package | $API_SIZE |" >> $GITHUB_STEP_SUMMARY
-        fi
-        if [ -f metabase-mcp-session.mcpb ]; then
-          SESSION_SIZE=$(ls -lh metabase-mcp-session.mcpb | awk '{print $5}')
-          echo "| Session Package | $SESSION_SIZE |" >> $GITHUB_STEP_SUMMARY
+        MCPB_FILE=$(ls *.mcpb 2>/dev/null | head -1)
+        if [ -n "$MCPB_FILE" ]; then
+          FILE_SIZE=$(ls -lh "$MCPB_FILE" | awk '{print $5}')
+          echo "| Package File | $MCPB_FILE |" >> $GITHUB_STEP_SUMMARY
+          echo "| File Size | $FILE_SIZE |" >> $GITHUB_STEP_SUMMARY
         fi
         echo "| Artifacts | ✅ Uploaded |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Note:** Both MCPB packages (API key and session auth) are available as build artifacts for 7 days." >> $GITHUB_STEP_SUMMARY
+        echo "**Note:** MCPB package available as build artifact for 7 days." >> $GITHUB_STEP_SUMMARY
 
   test-summary:
     name: Test Summary
