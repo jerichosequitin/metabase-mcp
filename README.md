@@ -1,6 +1,6 @@
 # Metabase MCP Server
 
-[![smithery badge](https://smithery.ai/badge/@jerichosequitin/metabase)](https://smithery.ai/server/@jerichosequitin/metabase)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jerichosequitin/metabase-mcp)
 
 **Version**: 1.0.1
 

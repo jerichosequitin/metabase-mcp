@@ -51,7 +51,6 @@ scripts/
 .prettierrc
 .prettierignore
 vitest.config.ts
-smithery.yaml
 
 # Tests (keep for Docker build, but could be excluded in production)
 # tests/
