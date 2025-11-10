@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Build script for creating DXT package
+ * Build script for creating MCPB package
  */
 
 const fs = require('fs');
@@ -9,11 +9,11 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 function log(message) {
-  console.log(`[DXT Builder] ${message}`);
+  console.log(`[MCPB Builder] ${message}`);
 }
 
-function buildDxtPackage() {
-  log('Building Metabase MCP DXT package...');
+function buildMcpbPackage() {
+  log('Building Metabase MCP MCPB package...');
 
   try {
     const manifestPath = path.join(process.cwd(), 'manifest.json');
@@ -25,14 +25,14 @@ function buildDxtPackage() {
 
     // Read and validate manifest
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    const outputFile = `${manifest.name}-${manifest.version}.dxt`;
+    const outputFile = `${manifest.name}-${manifest.version}.mcpb`;
     log(`Building: ${manifest.name} v${manifest.version}`);
 
-    // Build the DXT package
-    const dxtCommand = `dxt pack . ${outputFile}`;
-    log(`Executing: ${dxtCommand}`);
+    // Build the MCPB package
+    const mcpbCommand = `mcpb pack . ${outputFile}`;
+    log(`Executing: ${mcpbCommand}`);
 
-    execSync(dxtCommand, {
+    execSync(mcpbCommand, {
       stdio: 'inherit',
       cwd: process.cwd()
     });
@@ -42,7 +42,7 @@ function buildDxtPackage() {
     // Verify the file was created
     const outputPath = path.join(process.cwd(), outputFile);
     if (!fs.existsSync(outputPath)) {
-      throw new Error(`DXT file was not created: ${outputFile}`);
+      throw new Error(`MCPB file was not created: ${outputFile}`);
     }
 
     const stats = fs.statSync(outputPath);
@@ -50,14 +50,14 @@ function buildDxtPackage() {
 
     return outputFile;
   } catch (error) {
-    log(`Error building DXT package: ${error.message}`);
+    log(`Error building MCPB package: ${error.message}`);
     throw error;
   }
 }
 
 
 function main() {
-  log('Starting DXT package build process...');
+  log('Starting MCPB package build process...');
 
   // Ensure we're in the project root
   const packageJsonPath = path.join(process.cwd(), 'package.json');
@@ -65,10 +65,10 @@ function main() {
     throw new Error('package.json not found. Please run this script from the project root.');
   }
 
-  // Build the DXT package
-  const outputFile = buildDxtPackage();
+  // Build the MCPB package
+  const outputFile = buildMcpbPackage();
 
-  log('\nDXT package built successfully!');
+  log('\nMCPB package built successfully!');
   log(`Created: ${outputFile}`);
 }
 
@@ -76,9 +76,9 @@ if (require.main === module) {
   try {
     main();
   } catch (error) {
-    console.error(`[DXT Builder] Fatal error: ${error.message}`);
+    console.error(`[MCPB Builder] Fatal error: ${error.message}`);
     process.exit(1);
   }
 }
 
-module.exports = { buildDxtPackage };
+module.exports = { buildMcpbPackage };

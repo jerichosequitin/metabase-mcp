@@ -1,6 +1,6 @@
 {
   "name": "@jericho/metabase-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A custom Model Context Protocol server for Metabase integration - Jericho's version",
   "private": true,
   "type": "module",
@@ -35,8 +35,8 @@
     "test:coverage": "vitest run --coverage",
     "test:all": "./scripts/test-all.sh",
     "clean": "rm -rf build node_modules/.cache",
-    "dxt:build": "npm run build && node scripts/build-dxt.cjs",
-    "dxt:validate": "echo 'DXT validation - checking manifest structure' && node -e \"const fs = require('fs'); const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8')); console.log('Manifest valid:', manifest.name, manifest.version);\""
+    "mcpb:build": "npm run build && node scripts/build-mcpb.cjs",
+    "mcpb:validate": "echo 'MCPB validation - checking manifest structure' && node -e \"const fs = require('fs'); const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8')); console.log('Manifest valid:', manifest.name, manifest.version);\""
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.6.1",

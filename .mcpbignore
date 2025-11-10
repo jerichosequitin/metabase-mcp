@@ -1,5 +1,5 @@
-# DXT Package Ignore File
-# Specifies files and patterns to exclude from the DXT package
+# MCPB Package Ignore File
+# Specifies files and patterns to exclude from the MCPB package
 
 # Test files
 *.test.ts

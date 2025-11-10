@@ -2,30 +2,30 @@
 
 [![smithery badge](https://smithery.ai/badge/@jerichosequitin/metabase)](https://smithery.ai/server/@jerichosequitin/metabase)
 
-**Version**: 1.0.0
+**Version**: 1.0.1
 
 **Author**: Jericho Sequitin (@jerichosequitin)
 
 A high-performance Model Context Protocol server for AI integration with Metabase analytics platforms. Features intelligent caching, response optimization, and comprehensive data access tools.
 
-**Available as a Desktop Extension (DXT) for Claude Desktop.**
+**Available as an MCP Bundle (MCPB) for Claude Desktop.**
 
 ## Installation Options
 
-#### Option 1: Desktop Extension (Recommended for Claude Desktop Users)
+#### Option 1: MCP Bundle (Recommended for Claude Desktop Users)
 
-1. Download `metabase-mcp.dxt` from [Releases](https://github.com/jerichosequitin/metabase-mcp/releases)
-2. Open the `.dxt` file with Claude Desktop to install
+1. Download `metabase-mcp.mcpb` from [Releases](https://github.com/jerichosequitin/metabase-mcp/releases)
+2. Open the `.mcpb` file with Claude Desktop to install
 3. Configure your Metabase credentials in Claude Desktop's extension settings:
    - **Metabase URL** (required)
    - **Authentication**: Choose either API key OR email/password
    - **Export Directory**: Customize where files are saved (defaults to Downloads/Metabase)
    - **Optional**: Log level, cache TTL, and request timeout settings
 
-##### Benefits of DXT Installation
+##### Benefits of MCP Bundle Installation
 
 - **Single-click installation**: No manual configuration files or command-line setup
-- **Automatic updates**: Claude Desktop manages extension updates
+- **Automatic updates**: Claude Desktop manages bundle updates
 - **User-friendly settings**: Configure through Claude Desktop's UI
 - **Seamless integration**: Tools automatically available in your conversations
 
@@ -280,14 +280,14 @@ npm run test:coverage
 npm run inspector  # MCP Inspector for debugging
 ```
 
-### Building DXT Package
+### Building MCPB Package
 
 ```bash
 # Build for distribution
-npm run dxt:build
+npm run mcpb:build
 ```
 
-Creates `metabase-mcp.dxt` ready for GitHub Releases.
+Creates `metabase-mcp.mcpb` ready for GitHub Releases.
 
 ## Security Considerations
 
