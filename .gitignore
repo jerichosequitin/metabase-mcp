@@ -43,5 +43,5 @@ Thumbs.db
 tmp/
 temp/
 
-# DXT package files
-*.dxt
+# MCPB package files
+*.mcpb

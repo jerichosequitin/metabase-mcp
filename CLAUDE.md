@@ -46,8 +46,8 @@ npm run dev:watch
 # Single development run
 npm run dev
 
-# Build versioned DXT package
-npm run dxt:build
+# Build versioned MCPB package
+npm run mcpb:build
 ```
 
 ### Code Quality
@@ -118,21 +118,21 @@ CACHE_TTL_MS=600000           # 10 minutes default
 REQUEST_TIMEOUT_MS=600000     # 10 minutes default
 ```
 
-## DXT Package Management
+## MCPB Package Management
 
-The project includes DXT (Desktop Extension) package management for easy distribution.
+The project includes MCPB (MCP Bundle) package management for easy distribution.
 
-### Building DXT Packages
+### Building MCPB Packages
 ```bash
-# Build versioned DXT package
-npm run dxt:build
+# Build versioned MCPB package
+npm run mcpb:build
 
 # Validate manifest structure
-npm run dxt:validate
+npm run mcpb:validate
 ```
 
 ### Platform Compatibility
-The DXT package supports cross-platform deployment:
+The MCPB package supports cross-platform deployment:
 - **macOS** (darwin)
 - **Windows** (win32)  
 - **Linux** (linux)

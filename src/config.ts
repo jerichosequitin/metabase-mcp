@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { homedir } from 'os';
 import { join } from 'path';
 
-// Helper function to expand DXT system variables
+// Helper function to expand system variables
 function expandSystemVariables(path: string | undefined): string {
   // If no path is provided, use default
   if (!path) {

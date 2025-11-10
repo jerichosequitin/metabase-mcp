@@ -1,8 +1,8 @@
 {
-  "dxt_version": "0.2.5",
+  "manifest_version": "0.3",
   "name": "metabase-mcp",
   "display_name": "Metabase",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A high-performance MCP server for Metabase analytics data access with intelligent caching and response optimization.",
   "long_description": "This MCP server provides AI assistants with optimized access to Metabase analytics data. It offers high-performance data retrieval with intelligent caching, response optimization, and comprehensive tools for searching, listing, retrieving, and exporting data from Metabase instances. Features include concurrent processing, pagination support, and export capabilities for large datasets. Supports both API key and email/password authentication methods.",
   "author": {
