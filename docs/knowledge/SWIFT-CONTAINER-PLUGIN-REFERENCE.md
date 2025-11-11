@@ -9,11 +9,11 @@ Complete reference for Swift Container Plugin 1.1.0 - Build and publish containe
 Swift Container Plugin streamlines building and publishing container images for Swift services directly from Swift Package Manager. It eliminates the need for separate Dockerfiles and build processes.
 
 **Key Features:**
-- 🚀 **Integrated workflow** - Build and containerize in one command
-- 🔄 **Cross-compilation** - Build Linux containers from macOS
-- 📦 **Automatic packaging** - Packages executables from Package.swift
-- 🏗️ **Multi-architecture** - Supports x86_64 and ARM64
-- 🔐 **Registry integration** - Push directly to container registries
+- **Integrated workflow** - Build and containerize in one command
+- **Cross-compilation** - Build Linux containers from macOS
+- **Automatic packaging** - Packages executables from Package.swift
+- **Multi-architecture** - Supports x86_64 and ARM64
+- **Registry integration** - Push directly to container registries
 
 **Version**: 1.1.0 (Latest)
 **Requirements**: Swift 6.0+

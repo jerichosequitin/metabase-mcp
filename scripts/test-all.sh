@@ -5,7 +5,7 @@
 
 set -e  # Exit on any error
 
-echo "🚀 Starting comprehensive test suite for Metabase MCP Server..."
+echo "Starting comprehensive test suite for Metabase MCP Server..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -15,19 +15,19 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 print_step() {
-    echo -e "${BLUE}📋 $1${NC}"
+    echo -e "${BLUE}$1${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}$1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️ $1${NC}"
+    echo -e "${YELLOW}$1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}$1${NC}"
 }
 
 # Check if we're in the right directory
@@ -127,17 +127,17 @@ TEST_FILES=$(find tests -name "*.test.ts" | wc -l)
 TOTAL_TESTS=$(npm test 2>&1 | grep -o '[0-9]* passed' | head -1 | grep -o '[0-9]*' || echo "Unknown")
 
 echo ""
-echo "📊 Test Results Summary:"
+echo "Test Results Summary:"
 echo "========================"
 echo "Test Files: $TEST_FILES"
 echo "Total Tests: $TOTAL_TESTS"
 echo "Coverage Threshold: 80%"
-echo "Status: ✅ All tests passing"
+echo "Status: All tests passing"
 echo ""
 
 print_success "All quality checks and tests completed successfully!"
 echo ""
-echo "🎉 Your Metabase MCP Server is ready for deployment!"
+echo "Your Metabase MCP Server is ready for deployment!"
 echo ""
 echo "Next steps:"
 echo "- Push your changes to trigger CI/CD pipeline"

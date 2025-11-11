@@ -25,20 +25,20 @@ The Swift SDK Generator automates creating cross-compilation SDKs for Swift, mak
 
 ### Host Platforms (Build From)
 
-✅ **macOS** 13.0+
-✅ **FreeBSD** 14.3+
-✅ **Ubuntu** 20.04, 22.04, 24.04
+- **macOS** 13.0+
+- **FreeBSD** 14.3+
+- **Ubuntu** 20.04, 22.04, 24.04
 
 ### Target Platforms (Build For)
 
-✅ **Linux Distributions:**
+**Linux Distributions:**
 - Ubuntu 18.04, 20.04, 22.04, 24.04
 - Debian 10, 11, 12
 - Amazon Linux 2, 2023
 - RHEL 8, 9
 - Fedora 39, 40
 
-✅ **FreeBSD**:
+**FreeBSD**:
 - FreeBSD 13, 14
 
 ### Supported Architectures
@@ -515,12 +515,12 @@ swift sdk configure --show-configuration
 
 | Distribution | Versions | Architectures | Status |
 |--------------|----------|---------------|--------|
-| Ubuntu | 18.04, 20.04, 22.04, 24.04 | x86_64, aarch64 | ✅ Fully Supported |
-| Debian | 10, 11, 12 | x86_64, aarch64 | ✅ Fully Supported |
-| RHEL | 8, 9 | x86_64, aarch64 | ✅ Fully Supported |
-| Amazon Linux | 2, 2023 | x86_64, aarch64 | ✅ Fully Supported |
-| Fedora | 39, 40 | x86_64, aarch64 | ✅ Fully Supported |
-| FreeBSD | 13, 14 | amd64, arm64 | ✅ Fully Supported |
+| Ubuntu | 18.04, 20.04, 22.04, 24.04 | x86_64, aarch64 | Fully Supported |
+| Debian | 10, 11, 12 | x86_64, aarch64 | Fully Supported |
+| RHEL | 8, 9 | x86_64, aarch64 | Fully Supported |
+| Amazon Linux | 2, 2023 | x86_64, aarch64 | Fully Supported |
+| Fedora | 39, 40 | x86_64, aarch64 | Fully Supported |
+| FreeBSD | 13, 14 | amd64, arm64 | Fully Supported |
 
 ## References
 

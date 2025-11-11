@@ -15,15 +15,15 @@ When optimizing retrieve responses to reduce token usage, we need to:
 Each model has a standardized reference file: `{model}.json`
 
 ### Available Models
-- **card.json** ✅ - Complete with optimization analysis (~90% token reduction)
-- **dashboard.json** ✅ - Complete with optimization analysis (~85% token reduction)
-- **table.json** ✅ - Complete with optimization analysis (~80% token reduction)
-- **database.json** ✅ - Complete with optimization analysis (~75% token reduction)
-- **collection.json** ✅ - Complete with optimization analysis (~15% token reduction)
-- **field.json** ✅ - Complete with optimization analysis (~75% token reduction)
+- **card.json** - Complete with optimization analysis (~90% token reduction)
+- **dashboard.json** - Complete with optimization analysis (~85% token reduction)
+- **table.json** - Complete with optimization analysis (~80% token reduction)
+- **database.json** - Complete with optimization analysis (~75% token reduction)
+- **collection.json** - Complete with optimization analysis (~15% token reduction)
+- **field.json** - Complete with optimization analysis (~75% token reduction)
 
 ### Available Commands
-- **query.json** ✅ - SQL query and card execution optimizations (~85-90% token reduction)
+- **query.json** - SQL query and card execution optimizations (~85-90% token reduction)
 
 ## Reference File Format
 

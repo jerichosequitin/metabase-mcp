@@ -20,12 +20,12 @@ Complete security architecture for carbon-based personal AI containers with agen
 
 Personal AI Containers are **isolated, secure Swift-based containerized environments** designed exclusively for individual carbon-based entities (humans). Each container:
 
-- ✅ **Belongs to ONE human** - Verified through biometric authentication
-- ✅ **Isolated execution** - No cross-contamination between users
-- ✅ **Agent domain separation** - Capabilities isolated by function
-- ✅ **Concern domain isolation** - Data separated by context
-- ✅ **Secure plugin architecture** - Only approved plugins with minimal permissions
-- ✅ **Static linking** - Self-contained binaries with no external dependencies
+- **Belongs to ONE human** - Verified through biometric authentication
+- **Isolated execution** - No cross-contamination between users
+- **Agent domain separation** - Capabilities isolated by function
+- **Concern domain isolation** - Data separated by context
+- **Secure plugin architecture** - Only approved plugins with minimal permissions
+- **Static linking** - Self-contained binaries with no external dependencies
 
 ### Core Principles
 
@@ -613,7 +613,7 @@ podman run -d \
 
 ## Security Guarantees
 
-### ✅ What is Guaranteed
+### What is Guaranteed
 
 1. **Carbon-based ownership** - Only humans can create containers
 2. **Biometric verification** - Required for sensitive operations
@@ -624,7 +624,7 @@ podman run -d \
 7. **Minimal permissions** - Least privilege principle
 8. **Time-limited tokens** - Auto-expiring authentication
 
-### ⚠️ User Responsibilities
+### User Responsibilities
 
 1. **Protect biometric data** - Keep secure
 2. **Review plugins** - Before installation
