@@ -1,12 +1,11 @@
-import { z } from 'zod';
 import {
-  ListPromptsRequestSchema,
-  GetPromptRequestSchema,
+  ListPromptsRequest as SdkListPromptsRequest,
+  GetPromptRequest as SdkGetPromptRequest,
 } from '@modelcontextprotocol/sdk/types.js';
 
-// Type definitions for prompt handlers
-export type ListPromptsRequest = z.infer<typeof ListPromptsRequestSchema>;
-export type GetPromptRequest = z.infer<typeof GetPromptRequestSchema>;
+// Type definitions for prompt handlers (re-exported from SDK)
+export type ListPromptsRequest = SdkListPromptsRequest;
+export type GetPromptRequest = SdkGetPromptRequest;
 
 // Prompt argument definition
 export interface PromptArgument {

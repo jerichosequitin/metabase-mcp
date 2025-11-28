@@ -1,14 +1,13 @@
-import { z } from 'zod';
 import {
-  ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
-  ListResourceTemplatesRequestSchema,
+  ListResourcesRequest as SdkListResourcesRequest,
+  ReadResourceRequest as SdkReadResourceRequest,
+  ListResourceTemplatesRequest as SdkListResourceTemplatesRequest,
 } from '@modelcontextprotocol/sdk/types.js';
 
-// Type definitions for resource handlers
-export type ListResourcesRequest = z.infer<typeof ListResourcesRequestSchema>;
-export type ReadResourceRequest = z.infer<typeof ReadResourceRequestSchema>;
-export type ListResourceTemplatesRequest = z.infer<typeof ListResourceTemplatesRequestSchema>;
+// Type definitions for resource handlers (re-exported from SDK)
+export type ListResourcesRequest = SdkListResourcesRequest;
+export type ReadResourceRequest = SdkReadResourceRequest;
+export type ListResourceTemplatesRequest = SdkListResourceTemplatesRequest;
 
 // Resource template definition
 export interface ResourceTemplate {

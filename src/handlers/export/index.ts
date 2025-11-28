@@ -1,5 +1,4 @@
-import { z } from 'zod';
-import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 import { MetabaseApiClient } from '../../api.js';
 import { ErrorCode, McpError } from '../../types/core.js';
 import {
@@ -12,7 +11,7 @@ import { exportCard } from './exportCard.js';
 import { ExportRequest, SqlExportParams, CardExportParams, ExportResponse } from './types.js';
 
 export async function handleExport(
-  request: z.infer<typeof CallToolRequestSchema>,
+  request: CallToolRequest,
   requestId: string,
   apiClient: MetabaseApiClient,
   logDebug: (message: string, data?: unknown) => void,
