@@ -9,7 +9,7 @@ import {
   ListPromptsRequestSchema,
   GetPromptRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { LogLevel } from './config.js';
+import { LogLevel, config } from './config.js';
 import { generateRequestId } from './utils/index.js';
 import { ErrorCode, McpError, ApiError } from './types/core.js';
 import { MetabaseApiClient } from './api.js';
@@ -166,6 +166,12 @@ export class MetabaseServer {
             name: 'search',
             description:
               'Search across all Metabase items using native search API. Supports cards, dashboards, tables, collections, databases, and more. Use this first for finding any Metabase content. Returns search metrics, recommendations, and clean results organized by model type.',
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: true,
+            },
             inputSchema: {
               type: 'object',
               properties: {
@@ -240,6 +246,12 @@ export class MetabaseServer {
             name: 'retrieve',
             description:
               'Fetch additional details for supported models (Cards, Dashboards, Tables, Databases, Collections, Fields). Supports multiple IDs (max 50 per request) with intelligent concurrent processing and optimized caching. Includes table pagination for large databases exceeding token limits.',
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: true,
+            },
             inputSchema: {
               type: 'object',
               properties: {
@@ -281,6 +293,12 @@ export class MetabaseServer {
             name: 'list',
             description:
               'Fetch all records for a single Metabase resource type with highly optimized responses for overview purposes. Retrieves complete lists of cards, dashboards, tables, databases, or collections. Returns only essential identifier fields for efficient browsing and includes intelligent caching for performance. Supports pagination for large datasets exceeding token limits.',
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: true,
+            },
             inputSchema: {
               type: 'object',
               properties: {
@@ -310,7 +328,16 @@ export class MetabaseServer {
           {
             name: 'execute',
             description:
-              'Unified command to execute SQL queries or run saved cards against Metabase databases. Use Card mode when existing cards have the needed filters. Use SQL mode for custom queries or when cards lack required filters. Returns up to 2000 rows per request.',
+              'Unified command to execute SQL queries or run saved cards against Metabase databases. Use Card mode when existing cards have the needed filters. Use SQL mode for custom queries or when cards lack required filters. Returns up to 2000 rows per request. SECURITY WARNING: SQL mode can execute ANY valid SQL including destructive operations (DELETE, UPDATE, DROP, TRUNCATE, ALTER). Use with caution and ensure appropriate database permissions are configured in Metabase.' +
+              (config.METABASE_READ_ONLY_MODE
+                ? ' [READ-ONLY MODE ENABLED: Only SELECT queries are permitted. Write operations (INSERT, UPDATE, DELETE, DROP, etc.) will be rejected.]'
+                : ''),
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: true,
+              idempotentHint: false,
+              openWorldHint: true,
+            },
             inputSchema: {
               type: 'object',
               properties: {
@@ -353,6 +380,12 @@ export class MetabaseServer {
             name: 'export',
             description:
               'Unified command to export large SQL query results or saved cards using Metabase export endpoints (supports up to 1M rows). Returns data in specified format (CSV, JSON, or XLSX) and automatically saves to Downloads/Metabase folder.',
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: false,
+              openWorldHint: true,
+            },
             inputSchema: {
               type: 'object',
               properties: {
@@ -400,6 +433,12 @@ export class MetabaseServer {
             name: 'clear_cache',
             description:
               'Clear the internal cache for stored data. Useful for debugging or when you know the data has changed. Supports granular cache clearing for both individual items and list caches.',
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false,
+            },
             inputSchema: {
               type: 'object',
               properties: {
