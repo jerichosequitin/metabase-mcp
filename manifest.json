@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "metabase-mcp",
   "display_name": "Metabase",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "A high-performance MCP server for Metabase analytics data access with intelligent caching and response optimization.",
   "long_description": "This MCP server provides AI assistants with optimized access to Metabase analytics data. It offers high-performance data retrieval with intelligent caching, response optimization, and comprehensive tools for searching, listing, retrieving, and exporting data from Metabase instances. Features include concurrent processing, pagination support, and export capabilities for large datasets. Supports both API key and email/password authentication methods.",
   "author": {
@@ -30,7 +30,8 @@
         "EXPORT_DIRECTORY": "${user_config.export_directory}",
         "LOG_LEVEL": "${user_config.log_level}",
         "CACHE_TTL_MS": "${user_config.cache_ttl_ms}",
-        "REQUEST_TIMEOUT_MS": "${user_config.request_timeout_ms}"
+        "REQUEST_TIMEOUT_MS": "${user_config.request_timeout_ms}",
+        "METABASE_READ_ONLY_MODE": "${user_config.read_only_mode}"
       }
     }
   },
@@ -49,7 +50,7 @@
     },
     {
       "name": "execute",
-      "description": "Execute SQL queries or run saved cards against Metabase databases"
+      "description": "Execute SQL queries or run saved cards against Metabase databases. Warning: Can execute destructive SQL operations."
     },
     {
       "name": "export",
@@ -131,6 +132,13 @@
       "description": "Request timeout in milliseconds",
       "required": false,
       "default": 600000
+    },
+    "read_only_mode": {
+      "type": "boolean",
+      "title": "Read-Only Mode",
+      "description": "When enabled, restricts the execute tool to SELECT queries only. Write operations (INSERT, UPDATE, DELETE, DROP, etc.) will be blocked.",
+      "required": false,
+      "default": false
     }
   },
   "compatibility": {

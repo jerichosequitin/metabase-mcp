@@ -2,7 +2,7 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jerichosequitin/metabase-mcp)
 
-**Version**: 1.0.1
+**Version**: 1.1.0
 
 **Author**: Jericho Sequitin (@jerichosequitin)
 
@@ -70,6 +70,7 @@ The server exposes the following optimized tools for AI assistants:
   - **Card Parameters**: Filter card results using `card_parameters` array with name/value pairs
   - Enhanced with proper LIMIT clause handling and parameter validation
   - Intelligent mode detection with strict parameter validation
+  - **Security Warning**: SQL mode can execute ANY valid SQL including destructive operations (DELETE, UPDATE, DROP, TRUNCATE, ALTER). Ensure appropriate database permissions are configured in Metabase. Consider enabling read-only mode for safer operation.
 
 - **`export`**: Unified command for exporting large datasets (up to 1M rows)
   - **SQL Mode**: Export custom SQL query results with database_id and query parameters
@@ -132,6 +133,7 @@ METABASE_PASSWORD=your_password
 ```bash
 EXPORT_DIRECTORY=~/Downloads/Metabase  # Or ${DOWNLOADS}/Metabase
 LOG_LEVEL=info
+METABASE_READ_ONLY_MODE=false  # Set to true to restrict execute to SELECT-only queries
 ```
 
 ## Manual Installation (Developers)
@@ -169,6 +171,7 @@ EXPORT_DIRECTORY=~/Downloads/Metabase  # Or ${DOWNLOADS}/Metabase
 LOG_LEVEL=info
 CACHE_TTL_MS=600000 # 10 minutes by default
 REQUEST_TIMEOUT_MS=600000 # 10 minutes by default
+METABASE_READ_ONLY_MODE=false # Set to true to restrict execute to SELECT-only queries
 ```
 
 ### Claude Desktop Integration
@@ -287,7 +290,7 @@ npm run inspector  # MCP Inspector for debugging
 npm run mcpb:build
 ```
 
-Creates `metabase-mcp-{version}.mcpb` (e.g., `metabase-mcp-1.0.1.mcpb`) ready for GitHub Releases.
+Creates `metabase-mcp-{version}.mcpb` (e.g., `metabase-mcp-1.1.0.mcpb`) ready for GitHub Releases.
 
 ## Security Considerations
 
@@ -296,6 +299,22 @@ Creates `metabase-mcp-{version}.mcpb` (e.g., `metabase-mcp-1.0.1.mcpb`) ready fo
 - **Docker Secrets**: Support for Docker secrets and environment variables
 - **Network Security**: Apply appropriate network security measures
 - **Rate Limiting**: Built-in request rate limiting and timeout handling
+
+### Read-Only Mode
+
+For enhanced security, enable read-only mode to restrict the `execute` tool to SELECT queries only:
+
+```bash
+METABASE_READ_ONLY_MODE=true
+```
+
+When enabled:
+- Only SELECT queries are permitted through the `execute` tool
+- Write operations (INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, TRUNCATE, etc.) are blocked
+- Stored procedure calls (CALL, EXEC) and permission changes (GRANT, REVOKE) are also blocked
+- The tool description dynamically updates to indicate read-only mode is active
+
+This is recommended for production environments where AI assistants should only read data, not modify it.
 
 ## License
 
