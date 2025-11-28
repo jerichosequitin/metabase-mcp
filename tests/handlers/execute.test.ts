@@ -4,6 +4,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { handleExecute } from '../../src/handlers/execute/index.js';
+import { isReadOnlyQuery } from '../../src/handlers/execute/executeQuery.js';
 import { McpError } from '../../src/types/core.js';
 import {
   mockApiClient,
@@ -918,6 +919,136 @@ describe('handleExecute (execute command)', () => {
           database: 1,
         }),
       });
+    });
+  });
+});
+
+describe('isReadOnlyQuery', () => {
+  describe('should return true for read-only queries', () => {
+    it('should allow simple SELECT queries', () => {
+      expect(isReadOnlyQuery('SELECT * FROM users')).toBe(true);
+    });
+
+    it('should allow SELECT queries with WHERE clause', () => {
+      expect(isReadOnlyQuery('SELECT id, name FROM users WHERE active = true')).toBe(true);
+    });
+
+    it('should allow SELECT queries with JOINs', () => {
+      expect(isReadOnlyQuery('SELECT u.name, o.total FROM users u JOIN orders o ON u.id = o.user_id')).toBe(true);
+    });
+
+    it('should allow SELECT queries with subqueries', () => {
+      expect(isReadOnlyQuery('SELECT * FROM users WHERE id IN (SELECT user_id FROM orders)')).toBe(true);
+    });
+
+    it('should allow CTEs (WITH clause)', () => {
+      expect(isReadOnlyQuery('WITH active_users AS (SELECT * FROM users WHERE active = true) SELECT * FROM active_users')).toBe(true);
+    });
+
+    it('should allow SHOW statements', () => {
+      expect(isReadOnlyQuery('SHOW TABLES')).toBe(true);
+    });
+
+    it('should allow DESCRIBE statements', () => {
+      expect(isReadOnlyQuery('DESCRIBE users')).toBe(true);
+    });
+
+    it('should allow EXPLAIN statements', () => {
+      expect(isReadOnlyQuery('EXPLAIN SELECT * FROM users')).toBe(true);
+    });
+
+    it('should allow queries with leading comments', () => {
+      expect(isReadOnlyQuery('-- This is a comment\nSELECT * FROM users')).toBe(true);
+    });
+
+    it('should allow queries with multi-line comments', () => {
+      expect(isReadOnlyQuery('/* This is a comment */ SELECT * FROM users')).toBe(true);
+    });
+
+    it('should allow queries with leading whitespace', () => {
+      expect(isReadOnlyQuery('   \n  SELECT * FROM users')).toBe(true);
+    });
+
+    it('should be case insensitive', () => {
+      expect(isReadOnlyQuery('select * from users')).toBe(true);
+      expect(isReadOnlyQuery('Select * From Users')).toBe(true);
+    });
+  });
+
+  describe('should return false for write queries', () => {
+    it('should block INSERT queries', () => {
+      expect(isReadOnlyQuery('INSERT INTO users (name) VALUES ("test")')).toBe(false);
+    });
+
+    it('should block UPDATE queries', () => {
+      expect(isReadOnlyQuery('UPDATE users SET name = "test" WHERE id = 1')).toBe(false);
+    });
+
+    it('should block DELETE queries', () => {
+      expect(isReadOnlyQuery('DELETE FROM users WHERE id = 1')).toBe(false);
+    });
+
+    it('should block DROP TABLE queries', () => {
+      expect(isReadOnlyQuery('DROP TABLE users')).toBe(false);
+    });
+
+    it('should block DROP DATABASE queries', () => {
+      expect(isReadOnlyQuery('DROP DATABASE mydb')).toBe(false);
+    });
+
+    it('should block CREATE TABLE queries', () => {
+      expect(isReadOnlyQuery('CREATE TABLE users (id INT, name VARCHAR(255))')).toBe(false);
+    });
+
+    it('should block ALTER TABLE queries', () => {
+      expect(isReadOnlyQuery('ALTER TABLE users ADD COLUMN email VARCHAR(255)')).toBe(false);
+    });
+
+    it('should block TRUNCATE queries', () => {
+      expect(isReadOnlyQuery('TRUNCATE TABLE users')).toBe(false);
+    });
+
+    it('should block REPLACE queries', () => {
+      expect(isReadOnlyQuery('REPLACE INTO users (id, name) VALUES (1, "test")')).toBe(false);
+    });
+
+    it('should block MERGE queries', () => {
+      expect(isReadOnlyQuery('MERGE INTO users USING temp_users ON users.id = temp_users.id')).toBe(false);
+    });
+
+    it('should block CALL statements', () => {
+      expect(isReadOnlyQuery('CALL my_procedure()')).toBe(false);
+    });
+
+    it('should block EXEC statements', () => {
+      expect(isReadOnlyQuery('EXEC my_procedure')).toBe(false);
+      expect(isReadOnlyQuery('EXECUTE my_procedure')).toBe(false);
+    });
+
+    it('should block GRANT statements', () => {
+      expect(isReadOnlyQuery('GRANT SELECT ON users TO user1')).toBe(false);
+    });
+
+    it('should block REVOKE statements', () => {
+      expect(isReadOnlyQuery('REVOKE SELECT ON users FROM user1')).toBe(false);
+    });
+
+    it('should block SET statements', () => {
+      expect(isReadOnlyQuery('SET @variable = 1')).toBe(false);
+    });
+
+    it('should block write queries with leading comments', () => {
+      expect(isReadOnlyQuery('-- Comment\nDELETE FROM users')).toBe(false);
+    });
+
+    it('should block write queries with leading whitespace', () => {
+      expect(isReadOnlyQuery('   \n  INSERT INTO users (name) VALUES ("test")')).toBe(false);
+    });
+
+    it('should be case insensitive for write operations', () => {
+      expect(isReadOnlyQuery('delete from users')).toBe(false);
+      expect(isReadOnlyQuery('DELETE FROM users')).toBe(false);
+      expect(isReadOnlyQuery('Delete From Users')).toBe(false);
     });
   });
 });

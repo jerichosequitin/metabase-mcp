@@ -2,6 +2,44 @@ import { MetabaseApiClient } from '../../api.js';
 import { handleApiError, validatePositiveInteger } from '../../utils/index.js';
 import { SqlExecutionParams, ExecutionResponse } from './types.js';
 import { optimizeExecuteData } from './optimizers.js';
+import { config } from '../../config.js';
+import { ErrorCode, McpError } from '../../types/core.js';
+
+/**
+ * Validates if a SQL query is read-only (SELECT-only).
+ * Used when METABASE_READ_ONLY_MODE is enabled.
+ */
+export function isReadOnlyQuery(sql: string): boolean {
+  // Normalize the query: trim whitespace and remove leading comments
+  const normalized = sql
+    .trim()
+    // Remove single-line comments
+    .replace(/--.*$/gm, '')
+    // Remove multi-line comments
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .trim()
+    .toUpperCase();
+
+  // Patterns that indicate write operations
+  const writePatterns = [
+    /^\s*INSERT\b/,
+    /^\s*UPDATE\b/,
+    /^\s*DELETE\b/,
+    /^\s*DROP\b/,
+    /^\s*CREATE\b/,
+    /^\s*ALTER\b/,
+    /^\s*TRUNCATE\b/,
+    /^\s*REPLACE\b/,
+    /^\s*MERGE\b/,
+    /^\s*CALL\b/, // Stored procedures
+    /^\s*EXEC(UTE)?\b/, // Execute statements
+    /^\s*GRANT\b/,
+    /^\s*REVOKE\b/,
+    /^\s*SET\b/, // Can modify session variables
+  ];
+
+  return !writePatterns.some(pattern => pattern.test(normalized));
+}
 
 export async function executeSqlQuery(
   params: SqlExecutionParams,
@@ -17,6 +55,18 @@ export async function executeSqlQuery(
   // Validate positive integer parameters
   validatePositiveInteger(databaseId, 'database_id', requestId, logWarn);
   validatePositiveInteger(rowLimit, 'row_limit', requestId, logWarn);
+
+  // Check read-only mode restriction
+  if (config.METABASE_READ_ONLY_MODE && !isReadOnlyQuery(query)) {
+    logWarn('Write operation blocked by read-only mode', {
+      requestId,
+      query: query.substring(0, 100),
+    });
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      'Read-only mode is enabled. Only SELECT queries are permitted. Write operations (INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, TRUNCATE, etc.) are blocked. To execute write queries, disable read-only mode by setting METABASE_READ_ONLY_MODE=false.'
+    );
+  }
 
   logDebug(`Executing SQL query against database ID: ${databaseId} with row limit: ${rowLimit}`);
 
