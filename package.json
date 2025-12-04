@@ -42,6 +42,7 @@
     "@modelcontextprotocol/sdk": "^0.6.1",
     "@types/xlsx": "^0.0.35",
     "dotenv": "^16.3.1",
+    "open": "^10.1.0",
     "xlsx": "^0.18.5",
     "zod": "^3.22.4"
   },

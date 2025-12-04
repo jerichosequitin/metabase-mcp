@@ -1,6 +1,7 @@
-import { config, AuthMethod } from './config.js';
+import { config, AuthMethod, determineAuthMethod } from './config.js';
 import { ErrorCode, McpError } from './types/core.js';
 import { NetworkErrorFactory, createErrorFromHttpResponse } from './utils/errorFactory.js';
+import { tokenStore, getValidSession } from './auth/index.js';
 
 // Logger level enum
 enum LogLevel {
@@ -45,13 +46,15 @@ export class MetabaseApiClient {
 
   constructor() {
     this.baseUrl = config.METABASE_URL;
-    this.authMethod = config.METABASE_API_KEY ? AuthMethod.API_KEY : AuthMethod.SESSION;
+    this.authMethod = determineAuthMethod();
     this.apiKey = config.METABASE_API_KEY || null;
     this.CACHE_TTL_MS = config.CACHE_TTL_MS;
     this.REQUEST_TIMEOUT_MS = config.REQUEST_TIMEOUT_MS;
 
-    if (this.apiKey) {
+    if (this.authMethod === AuthMethod.API_KEY) {
       this.logInfo('Using API Key authentication method');
+    } else if (this.authMethod === AuthMethod.GOOGLE_SSO) {
+      this.logInfo('Using Google SSO authentication method');
     } else {
       this.logInfo('Using Session Token authentication method');
     }
@@ -153,7 +156,10 @@ export class MetabaseApiClient {
     if (this.authMethod === AuthMethod.API_KEY && this.apiKey) {
       // Use X-API-KEY header as specified in the Metabase documentation
       headers['X-API-KEY'] = this.apiKey;
-    } else if (this.authMethod === AuthMethod.SESSION && this.sessionToken) {
+    } else if (
+      (this.authMethod === AuthMethod.SESSION || this.authMethod === AuthMethod.GOOGLE_SSO) &&
+      this.sessionToken
+    ) {
       headers['X-Metabase-Session'] = this.sessionToken;
     }
 
@@ -680,7 +686,7 @@ export class MetabaseApiClient {
   }
 
   /**
-   * Get Metabase session token (only needed for session auth method)
+   * Get Metabase session token (handles all auth methods)
    */
   async getSessionToken(): Promise<string> {
     // If using API Key authentication, return the API key directly
@@ -690,6 +696,37 @@ export class MetabaseApiClient {
         keyFormat: this.apiKey.includes('mb_') ? 'starts with mb_' : 'other format',
       });
       return this.apiKey;
+    }
+
+    // For Google SSO auth, use stored tokens
+    if (this.authMethod === AuthMethod.GOOGLE_SSO) {
+      // Check if we already have a valid session token
+      if (this.sessionToken) {
+        return this.sessionToken;
+      }
+
+      // Try to get session from token store
+      this.logInfo('Checking for stored Google SSO session');
+      try {
+        const storedToken = await getValidSession();
+        if (storedToken) {
+          this.sessionToken = storedToken;
+          this.logInfo('Using stored Google SSO session');
+          return this.sessionToken;
+        }
+      } catch (error) {
+        this.logWarn('Failed to retrieve stored Google SSO session', undefined, error as Error);
+      }
+
+      // No valid session found - user needs to authenticate
+      this.logError(
+        'No valid Google SSO session found',
+        new Error('Please run "npx metabase-mcp auth login" to authenticate with Google SSO')
+      );
+      throw new McpError(
+        ErrorCode.InternalError,
+        'No valid Google SSO session found. Please run "npx metabase-mcp auth login" to authenticate.'
+      );
     }
 
     // For session auth, continue with existing logic
@@ -714,6 +751,29 @@ export class MetabaseApiClient {
       this.logError('Authentication with Metabase failed', error);
       throw new McpError(ErrorCode.InternalError, 'Failed to authenticate with Metabase');
     }
+  }
+
+  /**
+   * Initialize Google SSO authentication from stored tokens
+   * Call this method during startup for Google SSO auth
+   */
+  async initializeGoogleSsoAuth(): Promise<boolean> {
+    if (this.authMethod !== AuthMethod.GOOGLE_SSO) {
+      return false;
+    }
+
+    try {
+      const storedToken = await tokenStore.getSessionToken();
+      if (storedToken) {
+        this.sessionToken = storedToken;
+        this.logInfo('Initialized with stored Google SSO session');
+        return true;
+      }
+    } catch (error) {
+      this.logWarn('Failed to initialize Google SSO auth', undefined, error as Error);
+    }
+
+    return false;
   }
 
   /**

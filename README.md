@@ -37,7 +37,7 @@ Follow the standard MCP server installation process detailed in the Local Develo
 - **High Performance**: Up to 90% token reduction through response optimization
 - **Unified Commands**: `list`, `retrieve`, `search`, `execute`, and `export` tools
 - **Smart Caching**: Multi-layer caching with configurable TTL
-- **Dual Authentication**: API key or email/password authentication
+- **Flexible Authentication**: API key, email/password, or Google SSO
 - **Large Data Export**: Export up to 1M rows in CSV, JSON, and XLSX formats
 - **Configurable Export Directory**: Customize where files are saved
 
@@ -127,6 +127,18 @@ METABASE_URL=https://your-metabase-instance.com
 METABASE_USER_EMAIL=your_email@example.com
 METABASE_PASSWORD=your_password
 ```
+
+**Google SSO:**
+```bash
+METABASE_URL=https://your-metabase-instance.com
+METABASE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+METABASE_GOOGLE_CLIENT_SECRET=your-client-secret  # Optional, for token refresh
+
+# Then authenticate via CLI (one-time):
+npx metabase-mcp auth login
+```
+
+See [docs/auth.md](docs/auth.md) for detailed Google SSO setup instructions.
 
 **Optional Settings:**
 ```bash
@@ -293,9 +305,12 @@ Creates `metabase-mcp-{version}.mcpb` (e.g., `metabase-mcp-1.0.1.mcpb`) ready fo
 
 - **API Key Authentication**: Recommended for production environments
 - **Credential Security**: Environment variable-based configuration
+- **Google SSO Tokens**: Encrypted at rest in `~/.metabase-mcp/auth.json`
 - **Docker Secrets**: Support for Docker secrets and environment variables
 - **Network Security**: Apply appropriate network security measures
 - **Rate Limiting**: Built-in request rate limiting and timeout handling
+
+For detailed security best practices, see [docs/auth.md](docs/auth.md#security-best-practices).
 
 ## License
 

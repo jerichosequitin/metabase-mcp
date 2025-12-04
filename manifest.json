@@ -27,6 +27,8 @@
         "METABASE_API_KEY": "${user_config.metabase_api_key}",
         "METABASE_USER_EMAIL": "${user_config.metabase_user_email}",
         "METABASE_PASSWORD": "${user_config.metabase_password}",
+        "METABASE_GOOGLE_CLIENT_ID": "${user_config.google_client_id}",
+        "METABASE_GOOGLE_CLIENT_SECRET": "${user_config.google_client_secret}",
         "EXPORT_DIRECTORY": "${user_config.export_directory}",
         "LOG_LEVEL": "${user_config.log_level}",
         "CACHE_TTL_MS": "${user_config.cache_ttl_ms}",
@@ -100,6 +102,21 @@
       "type": "string",
       "title": "Password",
       "description": "Metabase User Password. Leave empty for API key authentication.",
+      "required": false,
+      "sensitive": true,
+      "default": ""
+    },
+    "google_client_id": {
+      "type": "string",
+      "title": "Google Client ID",
+      "description": "Google OAuth Client ID for SSO authentication. Must match the Client ID configured in your Metabase instance. After configuring, run 'npx metabase-mcp auth login' to complete authentication.",
+      "required": false,
+      "default": ""
+    },
+    "google_client_secret": {
+      "type": "string",
+      "title": "Google Client Secret",
+      "description": "Google OAuth Client Secret (optional). Enables automatic token refresh for long-running sessions.",
       "required": false,
       "sensitive": true,
       "default": ""
