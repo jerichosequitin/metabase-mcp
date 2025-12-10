@@ -105,6 +105,13 @@
       "sensitive": true,
       "default": ""
     },
+    "read_only_mode": {
+      "type": "boolean",
+      "title": "Read-Only Mode",
+      "description": "When enabled, restricts the execute tool to SELECT queries only. Write operations (INSERT, UPDATE, DELETE, DROP, etc.) will be blocked.",
+      "required": false,
+      "default": true
+    },
     "export_directory": {
       "type": "directory",
       "title": "Export Directory",
@@ -132,13 +139,6 @@
       "description": "Request timeout in milliseconds",
       "required": false,
       "default": 600000
-    },
-    "read_only_mode": {
-      "type": "boolean",
-      "title": "Read-Only Mode",
-      "description": "When enabled, restricts the execute tool to SELECT queries only. Write operations (INSERT, UPDATE, DELETE, DROP, etc.) will be blocked.",
-      "required": false,
-      "default": false
     }
   },
   "compatibility": {

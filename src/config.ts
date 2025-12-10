@@ -50,7 +50,7 @@ const envSchema = z
     EXPORT_DIRECTORY: z.string().default('${DOWNLOADS}/Metabase').transform(expandSystemVariables),
     METABASE_READ_ONLY_MODE: z
       .string()
-      .default('false')
+      .default('true')
       .transform(val => val.toLowerCase() === 'true'),
   })
   .refine(data => data.METABASE_API_KEY || (data.METABASE_USER_EMAIL && data.METABASE_PASSWORD), {
@@ -84,7 +84,7 @@ function createTestConfig() {
     CACHE_TTL_MS: 600000,
     REQUEST_TIMEOUT_MS: 600000,
     EXPORT_DIRECTORY: join(homedir(), 'Downloads', 'Metabase'),
-    METABASE_READ_ONLY_MODE: false,
+    METABASE_READ_ONLY_MODE: true,
   };
 }
 

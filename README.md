@@ -70,7 +70,7 @@ The server exposes the following optimized tools for AI assistants:
   - **Card Parameters**: Filter card results using `card_parameters` array with name/value pairs
   - Enhanced with proper LIMIT clause handling and parameter validation
   - Intelligent mode detection with strict parameter validation
-  - **Security Warning**: SQL mode can execute ANY valid SQL including destructive operations (DELETE, UPDATE, DROP, TRUNCATE, ALTER). Ensure appropriate database permissions are configured in Metabase. Consider enabling read-only mode for safer operation.
+  - **Security Warning**: SQL mode can execute ANY valid SQL including destructive operations (DELETE, UPDATE, DROP, TRUNCATE, ALTER). Ensure appropriate database permissions are configured in Metabase. Note: When Read-Only Mode is enabled (default), write operations will be rejected with an error.
 
 - **`export`**: Unified command for exporting large datasets (up to 1M rows)
   - **SQL Mode**: Export custom SQL query results with database_id and query parameters
@@ -133,7 +133,7 @@ METABASE_PASSWORD=your_password
 ```bash
 EXPORT_DIRECTORY=~/Downloads/Metabase  # Or ${DOWNLOADS}/Metabase
 LOG_LEVEL=info
-METABASE_READ_ONLY_MODE=false  # Set to true to restrict execute to SELECT-only queries
+METABASE_READ_ONLY_MODE=true  # Restricts execute to SELECT-only queries (default: true)
 ```
 
 ## Manual Installation (Developers)
@@ -171,7 +171,7 @@ EXPORT_DIRECTORY=~/Downloads/Metabase  # Or ${DOWNLOADS}/Metabase
 LOG_LEVEL=info
 CACHE_TTL_MS=600000 # 10 minutes by default
 REQUEST_TIMEOUT_MS=600000 # 10 minutes by default
-METABASE_READ_ONLY_MODE=false # Set to true to restrict execute to SELECT-only queries
+METABASE_READ_ONLY_MODE=true # Restricts execute to SELECT-only queries (default: true)
 ```
 
 ### Claude Desktop Integration
@@ -302,19 +302,18 @@ Creates `metabase-mcp-{version}.mcpb` (e.g., `metabase-mcp-1.1.0.mcpb`) ready fo
 
 ### Read-Only Mode
 
-For enhanced security, enable read-only mode to restrict the `execute` tool to SELECT queries only:
+Read-only mode is **enabled by default** to restrict the `execute` tool to SELECT queries only. To disable:
 
 ```bash
-METABASE_READ_ONLY_MODE=true
+METABASE_READ_ONLY_MODE=false
 ```
 
 When enabled:
 - Only SELECT queries are permitted through the `execute` tool
-- Write operations (INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, TRUNCATE, etc.) are blocked
+- Write operations (INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, TRUNCATE, etc.) are rejected with an error
 - Stored procedure calls (CALL, EXEC) and permission changes (GRANT, REVOKE) are also blocked
-- The tool description dynamically updates to indicate read-only mode is active
 
-This is recommended for production environments where AI assistants should only read data, not modify it.
+This default is recommended for production environments where AI assistants should only read data, not modify it.
 
 ## License
 

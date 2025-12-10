@@ -9,7 +9,7 @@ import {
   ListPromptsRequestSchema,
   GetPromptRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { LogLevel, config } from './config.js';
+import { LogLevel } from './config.js';
 import { generateRequestId } from './utils/index.js';
 import { ErrorCode, McpError, ApiError } from './types/core.js';
 import { MetabaseApiClient } from './api.js';
@@ -36,7 +36,7 @@ export class MetabaseServer {
     this.server = new Server(
       {
         name: 'metabase-mcp',
-        version: '1.0.0',
+        version: '1.1.0',
       },
       {
         capabilities: {
@@ -328,10 +328,7 @@ export class MetabaseServer {
           {
             name: 'execute',
             description:
-              'Unified command to execute SQL queries or run saved cards against Metabase databases. Use Card mode when existing cards have the needed filters. Use SQL mode for custom queries or when cards lack required filters. Returns up to 2000 rows per request. SECURITY WARNING: SQL mode can execute ANY valid SQL including destructive operations (DELETE, UPDATE, DROP, TRUNCATE, ALTER). Use with caution and ensure appropriate database permissions are configured in Metabase.' +
-              (config.METABASE_READ_ONLY_MODE
-                ? ' [READ-ONLY MODE ENABLED: Only SELECT queries are permitted. Write operations (INSERT, UPDATE, DELETE, DROP, etc.) will be rejected.]'
-                : ''),
+              'Unified command to execute SQL queries or run saved cards against Metabase databases. Use Card mode when existing cards have the needed filters. Use SQL mode for custom queries or when cards lack required filters. Returns up to 2000 rows per request. SECURITY WARNING: SQL mode can execute ANY valid SQL including destructive operations (DELETE, UPDATE, DROP, TRUNCATE, ALTER). Use with caution and ensure appropriate database permissions are configured in Metabase. Note: When Read-Only Mode is enabled, write operations will be rejected with an error.',
             annotations: {
               readOnlyHint: false,
               destructiveHint: true,
