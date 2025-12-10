@@ -45,7 +45,7 @@ function createMockXlsxWithData(): ArrayBuffer {
   if (buffer instanceof ArrayBuffer) {
     return buffer;
   } else if (buffer instanceof Uint8Array) {
-    return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
   } else {
     // If buffer is a regular array, convert to ArrayBuffer
     const uint8Array = new Uint8Array(buffer);

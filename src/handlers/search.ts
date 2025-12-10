@@ -1,12 +1,11 @@
-import { z } from 'zod';
-import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 import { MetabaseApiClient } from '../api.js';
 import { ErrorCode, McpError } from '../types/core.js';
 import { ValidationErrorFactory } from '../utils/errorFactory.js';
 import { handleApiError, validatePositiveInteger, validateEnumValue } from '../utils/index.js';
 
 export async function handleSearch(
-  request: z.infer<typeof CallToolRequestSchema>,
+  request: CallToolRequest,
   requestId: string,
   apiClient: MetabaseApiClient,
   logDebug: (message: string, data?: unknown) => void,

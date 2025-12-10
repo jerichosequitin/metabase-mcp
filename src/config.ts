@@ -48,6 +48,10 @@ const envSchema = z
       .transform(val => parseInt(val, 10))
       .pipe(z.number().positive()), // 10 minutes
     EXPORT_DIRECTORY: z.string().default('${DOWNLOADS}/Metabase').transform(expandSystemVariables),
+    METABASE_READ_ONLY_MODE: z
+      .string()
+      .default('true')
+      .transform(val => val.toLowerCase() === 'true'),
   })
   .refine(data => data.METABASE_API_KEY || (data.METABASE_USER_EMAIL && data.METABASE_PASSWORD), {
     message:
@@ -80,6 +84,7 @@ function createTestConfig() {
     CACHE_TTL_MS: 600000,
     REQUEST_TIMEOUT_MS: 600000,
     EXPORT_DIRECTORY: join(homedir(), 'Downloads', 'Metabase'),
+    METABASE_READ_ONLY_MODE: true,
   };
 }
 
