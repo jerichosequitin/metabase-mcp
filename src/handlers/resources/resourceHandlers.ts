@@ -1,5 +1,5 @@
 import { generateRequestId } from '../../utils/index.js';
-import { ErrorCode, McpError } from '../../types/core.js';
+import { ErrorCode, McpError, isMcpError } from '../../types/core.js';
 import { MetabaseApiClient } from '../../api.js';
 import {
   optimizeDashboardResource,
@@ -299,7 +299,7 @@ export async function handleReadResource(
     logWarn(`Invalid URI format: ${uri}`, { requestId });
     throw new McpError(ErrorCode.InvalidRequest, `Invalid URI format: ${uri}`);
   } catch (error) {
-    if (error instanceof McpError) {
+    if (isMcpError(error)) {
       throw error;
     }
 

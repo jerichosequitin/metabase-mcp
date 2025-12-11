@@ -1,4 +1,4 @@
-import { ErrorCode, McpError } from '../types/core.js';
+import { ErrorCode, McpError, isMcpError } from '../types/core.js';
 import { validateNonEmptyString } from './validation.js';
 
 export interface MetabaseCardParameter {
@@ -46,7 +46,7 @@ export function validateCardParameters(
       validateNonEmptyString(param.slug, `${paramIndex} 'slug' field`, requestId, logWarn);
       validateNonEmptyString(param.type, `${paramIndex} 'type' field`, requestId, logWarn);
     } catch (error) {
-      if (error instanceof McpError) {
+      if (isMcpError(error)) {
         throw new McpError(
           error.code,
           `Card parameter at index ${i} has invalid field: ${error.message}`

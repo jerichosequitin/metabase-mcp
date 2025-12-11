@@ -98,6 +98,21 @@ export class McpError extends Error {
   }
 }
 
+/**
+ * Type guard for McpError that works across ESM module boundaries.
+ * Uses duck typing instead of instanceof to avoid class identity issues.
+ */
+export function isMcpError(error: unknown): error is McpError {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    'code' in error &&
+    'details' in error &&
+    'message' in error &&
+    (error as McpError).name === 'McpError'
+  );
+}
+
 // API error type definition
 export interface ApiError {
   status?: number;

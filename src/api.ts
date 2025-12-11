@@ -1,5 +1,5 @@
 import { config, AuthMethod } from './config.js';
-import { ErrorCode, McpError } from './types/core.js';
+import { ErrorCode, McpError, isMcpError } from './types/core.js';
 import { NetworkErrorFactory, createErrorFromHttpResponse } from './utils/errorFactory.js';
 
 // Logger level enum
@@ -213,7 +213,7 @@ export class MetabaseApiClient {
       }
 
       // If it's already an enhanced McpError, re-throw it
-      if (error instanceof McpError) {
+      if (isMcpError(error)) {
         throw error;
       }
 

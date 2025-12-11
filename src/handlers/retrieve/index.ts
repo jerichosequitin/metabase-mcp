@@ -1,6 +1,6 @@
 import { CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 import { MetabaseApiClient, CachedResponse } from '../../api.js';
-import { ErrorCode, McpError } from '../../types/core.js';
+import { ErrorCode, McpError, isMcpError } from '../../types/core.js';
 import {
   ResourceNotFoundErrorFactory,
   AuthorizationErrorFactory,
@@ -300,7 +300,7 @@ export async function handleRetrieve(
         logWarn(`Failed to retrieve ${validatedModel} ${id}: ${errorMessage}`, { requestId });
 
         // Check if this is an enhanced error with specific categories
-        if (error instanceof McpError) {
+        if (isMcpError(error)) {
           return {
             success: false,
             id,

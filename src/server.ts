@@ -11,7 +11,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { LogLevel } from './config.js';
 import { generateRequestId } from './utils/index.js';
-import { ErrorCode, McpError, ApiError } from './types/core.js';
+// Note: ApiError and isMcpError removed - errors are caught and returned, not type-checked
 import { MetabaseApiClient } from './api.js';
 import {
   handleList,
@@ -480,131 +480,108 @@ export class MetabaseServer {
 
       await this.apiClient.getSessionToken();
 
-      try {
-        switch (request.params?.name) {
-          case 'search':
-            return handleSearch(
-              request,
-              requestId,
-              this.apiClient,
-              this.logDebug.bind(this),
-              this.logInfo.bind(this),
-              this.logWarn.bind(this),
-              this.logError.bind(this)
-            );
-
-          case 'list':
-            return handleList(
-              request,
-              requestId,
-              this.apiClient,
-              this.logDebug.bind(this),
-              this.logInfo.bind(this),
-              this.logWarn.bind(this),
-              this.logError.bind(this)
-            );
-
-          case 'execute':
-            return handleExecute(
-              request,
-              requestId,
-              this.apiClient,
-              this.logDebug.bind(this),
-              this.logInfo.bind(this),
-              this.logWarn.bind(this),
-              this.logError.bind(this)
-            );
-          case 'export':
-            return handleExport(
-              request,
-              requestId,
-              this.apiClient,
-              this.logDebug.bind(this),
-              this.logInfo.bind(this),
-              this.logWarn.bind(this),
-              this.logError.bind(this)
-            );
-          case 'clear_cache':
-            return handleClearCache(
-              request,
-              this.apiClient,
-              this.logInfo.bind(this),
-              this.logWarn.bind(this),
-              this.logError.bind(this)
-            );
-          case 'retrieve':
-            return handleRetrieve(
-              request,
-              requestId,
-              this.apiClient,
-              this.logDebug.bind(this),
-              this.logInfo.bind(this),
-              this.logWarn.bind(this),
-              this.logError.bind(this)
-            );
-          default:
-            this.logWarn(`Received request for unknown tool: ${request.params?.name}`, {
-              requestId,
-            });
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `Unknown tool: ${request.params?.name}`,
-                },
-              ],
-              isError: true,
-            };
-        }
-      } catch (error) {
-        // If it's already an McpError, re-throw it to be handled by the MCP framework
-        if (error instanceof McpError) {
-          // For enhanced errors, return structured guidance in the response
-          // Use the error message directly without duplication
-          const errorText = [`Error: ${error.message}`];
-
-          // Add guidance if different from the main message
-          if (error.details.agentGuidance && error.details.agentGuidance !== error.message) {
-            errorText.push(`\n\nGuidance: ${error.details.agentGuidance}`);
-          }
-
-          errorText.push(`\n\nRecovery Action: ${error.details.recoveryAction}`);
-          errorText.push(`\n\nRetryable: ${error.details.retryable}`);
-
-          // Add retry timing if available
-          if (error.details.retryAfterMs) {
-            errorText.push(`\n\nRetry After: ${error.details.retryAfterMs}ms`);
-          }
-
-          const errorResponse = {
-            content: [
-              {
-                type: 'text',
-                text: errorText.join(''),
-              },
-            ],
+      // Helper to wrap handler calls and convert errors to tool results
+      // Handles both sync and async handlers
+      const safeCall = async <T>(
+        handler: () => T | Promise<T>
+      ): Promise<T | { content: { type: string; text: string }[]; isError: true }> => {
+        try {
+          return await handler();
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          this.logError(`Tool execution failed: ${errorMessage}`, error);
+          return {
+            content: [{ type: 'text', text: `Error: ${errorMessage}` }],
             isError: true,
           };
-
-          // Add troubleshooting steps if available
-          if (error.details.troubleshootingSteps && error.details.troubleshootingSteps.length > 0) {
-            errorResponse.content.push({
-              type: 'text',
-              text: `\nTroubleshooting Steps:\n${error.details.troubleshootingSteps.map((step, index) => `${index + 1}. ${step}`).join('\n')}`,
-            });
-          }
-
-          return errorResponse;
         }
+      };
 
-        // Handle other errors with generic fallback
-        const apiError = error as ApiError;
-        const errorMessage = apiError.data?.message || apiError.message || 'Unknown error';
+      switch (request.params?.name) {
+        case 'search':
+          return safeCall(() =>
+            handleSearch(
+              request,
+              requestId,
+              this.apiClient,
+              this.logDebug.bind(this),
+              this.logInfo.bind(this),
+              this.logWarn.bind(this),
+              this.logError.bind(this)
+            )
+          );
 
-        this.logError(`Tool execution failed: ${errorMessage}`, error);
+        case 'list':
+          return safeCall(() =>
+            handleList(
+              request,
+              requestId,
+              this.apiClient,
+              this.logDebug.bind(this),
+              this.logInfo.bind(this),
+              this.logWarn.bind(this),
+              this.logError.bind(this)
+            )
+          );
 
-        // Create an McpError for consistent error handling
-        throw new McpError(ErrorCode.InternalError, `Tool execution failed: ${errorMessage}`);
+        case 'execute':
+          return safeCall(() =>
+            handleExecute(
+              request,
+              requestId,
+              this.apiClient,
+              this.logDebug.bind(this),
+              this.logInfo.bind(this),
+              this.logWarn.bind(this),
+              this.logError.bind(this)
+            )
+          );
+
+        case 'export':
+          return safeCall(() =>
+            handleExport(
+              request,
+              requestId,
+              this.apiClient,
+              this.logDebug.bind(this),
+              this.logInfo.bind(this),
+              this.logWarn.bind(this),
+              this.logError.bind(this)
+            )
+          );
+
+        case 'clear_cache':
+          return safeCall(() =>
+            handleClearCache(
+              request,
+              this.apiClient,
+              this.logInfo.bind(this),
+              this.logWarn.bind(this),
+              this.logError.bind(this)
+            )
+          );
+
+        case 'retrieve':
+          return safeCall(() =>
+            handleRetrieve(
+              request,
+              requestId,
+              this.apiClient,
+              this.logDebug.bind(this),
+              this.logInfo.bind(this),
+              this.logWarn.bind(this),
+              this.logError.bind(this)
+            )
+          );
+
+        default:
+          this.logWarn(`Received request for unknown tool: ${request.params?.name}`, {
+            requestId,
+          });
+          return {
+            content: [{ type: 'text', text: `Error: Unknown tool '${request.params?.name}'` }],
+            isError: true,
+          };
       }
     });
   }
