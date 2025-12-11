@@ -43,9 +43,6 @@ export interface ErrorContext {
   operation: string;
   resourceType?: string;
   resourceId?: string | number;
-  customMessages?: {
-    [statusCode: string]: string;
-  };
 }
 
 /**
@@ -97,14 +94,7 @@ export function handleApiError(
     }
 
     errorMessage = `Metabase API error (${statusCode})`;
-
-    // Check for custom messages first
-    if (context.customMessages?.[statusCode]) {
-      errorMessage += `: ${context.customMessages[statusCode]}`;
-    } else {
-      // Apply generic status code handling
-      errorMessage += getStatusCodeMessage(statusCode, context);
-    }
+    errorMessage += getStatusCodeMessage(statusCode, context);
   } else if (error?.message) {
     errorDetails = error.message;
     errorMessage = getGenericErrorMessage(error.message, context);
@@ -196,36 +186,23 @@ function getStatusCodeMessage(statusCode: string, context: ErrorContext): string
 }
 
 /**
- * Get error message for non-HTTP errors
+ * Get error message for non-HTTP errors.
+ * Preserves the original error message to avoid hiding meaningful Metabase errors.
  */
 function getGenericErrorMessage(errorMessage: string, context: ErrorContext): string {
   const { operation } = context;
 
-  if (errorMessage.includes('timeout')) {
-    return `${operation} timed out. Try again later or reduce the complexity of your request.`;
-  }
-
-  if (errorMessage.includes('ENOTFOUND') || errorMessage.includes('network')) {
+  // Only transform truly generic network/infrastructure errors
+  if (errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED')) {
     return `Network error connecting to Metabase. Check your connection and Metabase URL.`;
   }
 
-  if (errorMessage.includes('syntax') || errorMessage.includes('SQL')) {
-    return `SQL syntax error. Check your query syntax and ensure all table/column names are correct.`;
+  // Avoid double-prefixing if error already contains the operation
+  if (errorMessage.includes(`${operation} failed`)) {
+    return errorMessage;
   }
 
-  if (errorMessage.includes('permission') || errorMessage.includes('access')) {
-    return `Access denied. Check your permissions for this operation.`;
-  }
-
-  if (
-    errorMessage.toLowerCase().includes('database connection') ||
-    errorMessage.toLowerCase().includes('database timeout') ||
-    errorMessage.toLowerCase().includes('connection refused') ||
-    errorMessage.toLowerCase().includes('connection failed')
-  ) {
-    return `Database connection error. Ensure the database is accessible and your credentials are correct.`;
-  }
-
+  // Pass through all other error messages - they likely contain meaningful info from Metabase
   return `${operation} failed: ${errorMessage}`;
 }
 

@@ -327,17 +327,7 @@ export async function exportSqlQuery(
   } catch (error: any) {
     throw handleApiError(
       error,
-      {
-        operation: 'Export query',
-        resourceType: 'database',
-        resourceId: databaseId,
-        customMessages: {
-          '400':
-            'Invalid query parameters, SQL syntax error, or export format issue. Ensure format is csv, json, or xlsx.',
-          '413': 'Export payload too large. Try reducing the result set size or use query filters.',
-          '500': 'Database server error. The query may have caused a timeout or database issue.',
-        },
-      },
+      { operation: 'Export query', resourceType: 'database', resourceId: databaseId },
       logError
     );
   }

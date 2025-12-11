@@ -166,16 +166,6 @@ export function handleClearCache(
       ],
     };
   } catch (error: any) {
-    throw handleApiError(
-      error,
-      {
-        operation: 'Clear cache',
-        customMessages: {
-          // No specific HTTP status codes expected for cache operations
-          // The generic error handling will handle TypeError and other internal errors
-        },
-      },
-      logError
-    );
+    throw handleApiError(error, { operation: 'Clear cache' }, logError);
   }
 }

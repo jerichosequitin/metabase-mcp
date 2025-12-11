@@ -361,12 +361,6 @@ export async function handleSearch(
         operation: 'Search',
         resourceType: databaseId ? 'database' : undefined,
         resourceId: databaseId,
-        customMessages: {
-          '400':
-            'Invalid search parameters. Check model types, database_id, or premium feature requirements (verified parameter).',
-          '403': 'Access denied. You may not have permission to search these items.',
-          '404': 'Search endpoint not found. This Metabase version may not support the search API.',
-        },
       },
       logError
     );

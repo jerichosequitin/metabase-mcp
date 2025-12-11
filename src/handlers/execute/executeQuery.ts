@@ -174,11 +174,6 @@ export async function executeSqlQuery(
         operation: 'SQL query execution',
         resourceType: 'database',
         resourceId: databaseId as number,
-        customMessages: {
-          '400':
-            'Invalid query parameters or SQL syntax error. Check your query syntax and ensure all table/column names are correct.',
-          '500': 'Database server error. The query may have caused a timeout or database issue.',
-        },
       },
       logError
     );

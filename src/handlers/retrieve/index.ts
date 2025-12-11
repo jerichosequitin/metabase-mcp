@@ -507,11 +507,6 @@ export async function handleRetrieve(
         operation: `Retrieve ${validatedModel} details`,
         resourceType: validatedModel,
         resourceId: numericIds.join(', '),
-        customMessages: {
-          '400': `Invalid ${validatedModel} parameters. Ensure all IDs are valid numbers.`,
-          '404': `One or more ${validatedModel}s not found. Check that the IDs are correct and the ${validatedModel}s exist.`,
-          '500': `Metabase server error while retrieving ${validatedModel}s. The server may be experiencing issues.`,
-        },
       },
       logError
     );
