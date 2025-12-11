@@ -10,7 +10,7 @@ import {
   ExportErrorFactory,
   createErrorFromHttpResponse,
 } from '../../src/utils/errorFactory.js';
-import { validateMetabaseResponse } from '../../src/utils/errorHandling.js';
+import { validateMetabaseResponse, extractCleanErrorMessage } from '../../src/utils/errorHandling.js';
 import { ErrorCategory, RecoveryAction, McpError } from '../../src/types/core.js';
 
 describe('ErrorFactory', () => {
@@ -462,10 +462,10 @@ describe('ErrorFactory', () => {
           { operation: 'Query execution' },
           mockLogError
         );
-      }).toThrowError('Query execution failed: Database connection failed');
+      }).toThrowError('Database connection failed.');
 
       expect(mockLogError).toHaveBeenCalledWith(
-        'Query execution failed with embedded error',
+        'Query execution failed: Database connection failed.',
         errorResponse
       );
     });
@@ -531,5 +531,46 @@ describe('ErrorFactory', () => {
       );
     });
 
+  });
+
+  describe('extractCleanErrorMessage', () => {
+    it('should extract table not found error', () => {
+      const error = 'Table "ORDERSASD" not found; SQL statement:\n-- Metabase:: userID: 1 queryType: native queryHash: 22df1740fa126b46d6d53bc2fd61d90c042ba4c4a1802d544dfd4449e29c2eae\nSELECT ID FROM ORDERSASD [42102-214]';
+      expect(extractCleanErrorMessage(error)).toBe('Table "ORDERSASD" not found.');
+    });
+
+    it('should extract column not found error', () => {
+      const error = 'Column "IDZ" not found; SQL statement:\nSELECT IDZ FROM ORDERS [42122-214]';
+      expect(extractCleanErrorMessage(error)).toBe('Column "IDZ" not found.');
+    });
+
+    it('should handle error without SQL statement suffix', () => {
+      const error = 'Only SELECT statements are allowed in a native query.';
+      expect(extractCleanErrorMessage(error)).toBe('Only SELECT statements are allowed in a native query.');
+    });
+
+    it('should handle empty error string', () => {
+      expect(extractCleanErrorMessage('')).toBe('Unknown query error');
+    });
+
+    it('should handle null/undefined error', () => {
+      expect(extractCleanErrorMessage(null as any)).toBe('Unknown query error');
+      expect(extractCleanErrorMessage(undefined as any)).toBe('Unknown query error');
+    });
+
+    it('should add period if missing', () => {
+      const error = 'Database timeout';
+      expect(extractCleanErrorMessage(error)).toBe('Database timeout.');
+    });
+
+    it('should not add period if already present', () => {
+      const error = 'Connection failed.';
+      expect(extractCleanErrorMessage(error)).toBe('Connection failed.');
+    });
+
+    it('should remove H2 database error codes', () => {
+      const error = 'Syntax error in SQL statement [42001-214]';
+      expect(extractCleanErrorMessage(error)).toBe('Syntax error in SQL statement.');
+    });
   });
 });

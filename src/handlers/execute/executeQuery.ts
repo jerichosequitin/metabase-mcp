@@ -1,5 +1,9 @@
 import { MetabaseApiClient } from '../../api.js';
-import { handleApiError, validatePositiveInteger } from '../../utils/index.js';
+import {
+  handleApiError,
+  validatePositiveInteger,
+  validateMetabaseResponse,
+} from '../../utils/index.js';
 import { SqlExecutionParams, ExecutionResponse } from './types.js';
 import { optimizeExecuteData } from './optimizers.js';
 import { config } from '../../config.js';
@@ -128,6 +132,13 @@ export async function executeSqlQuery(
       method: 'POST',
       body: JSON.stringify(queryData),
     });
+
+    // Check for embedded errors in the response (Metabase returns 202 with errors for invalid queries)
+    validateMetabaseResponse(
+      response,
+      { operation: 'SQL query execution', resourceId: databaseId },
+      logError
+    );
 
     const rowCount = response?.data?.rows?.length || 0;
     logInfo(

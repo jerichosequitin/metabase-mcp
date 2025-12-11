@@ -6,6 +6,37 @@ import { ErrorCode, McpError, ErrorCategory, RecoveryAction } from '../types/cor
 import { createErrorFromHttpResponse, ValidationErrorFactory } from './errorFactory.js';
 
 /**
+ * Extracts and cleans error messages from Metabase responses.
+ * Metabase often includes SQL statements and technical details that aren't useful for users.
+ *
+ * Examples:
+ * - 'Table "ORDERS" not found; SQL statement: SELECT...' -> 'Table "ORDERS" not found'
+ * - 'Column "IDZ" not found; SQL statement: SELECT...' -> 'Column "IDZ" not found'
+ * - 'Only SELECT statements are allowed...' -> (unchanged)
+ */
+export function extractCleanErrorMessage(error: string): string {
+  if (!error) {
+    return 'Unknown query error';
+  }
+
+  // Remove SQL statement details (everything after "; SQL statement:")
+  let cleaned = error.split('; SQL statement:')[0].trim();
+
+  // Remove Metabase query hash comments
+  cleaned = cleaned.replace(/-- Metabase::.*$/gm, '').trim();
+
+  // Remove H2 database error codes like [42102-214]
+  cleaned = cleaned.replace(/\s*\[\d+-\d+\]\s*$/, '').trim();
+
+  // Ensure it ends with a period if it doesn't have punctuation
+  if (cleaned && !/[.!?]$/.test(cleaned)) {
+    cleaned += '.';
+  }
+
+  return cleaned || 'Unknown query error';
+}
+
+/**
  * Error handling context for different operations
  */
 export interface ErrorContext {
@@ -260,7 +291,15 @@ export function validateMetabaseResponse(
     );
   }
 
-  // Check for other common embedded error types
+  // Check for query execution errors (status: 'failed' with error message)
+  // Metabase returns 202 with these errors for invalid SQL (wrong table/column names, etc.)
+  if (response?.status === 'failed' && response?.error) {
+    const cleanedError = extractCleanErrorMessage(response.error);
+    logError(`${context.operation} failed: ${cleanedError}`, response);
+    throw new Error(`${context.operation} failed: ${cleanedError}`);
+  }
+
+  // Check for other common embedded error types (legacy handling)
   if (response?.error_type && response?.status === 'failed') {
     logError(
       `${context.operation} failed with embedded error${context.resourceId ? ` for ${context.resourceId}` : ''}`,

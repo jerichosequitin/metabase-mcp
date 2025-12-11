@@ -1,5 +1,10 @@
 import { MetabaseApiClient } from '../../api.js';
-import { handleApiError, sanitizeFilename, analyzeXlsxContent } from '../../utils/index.js';
+import {
+  handleApiError,
+  sanitizeFilename,
+  analyzeXlsxContent,
+  validateMetabaseResponse,
+} from '../../utils/index.js';
 import { config, authMethod, AuthMethod } from '../../config.js';
 import * as XLSX from 'xlsx';
 import { SqlExportParams, ExportResponse } from './types.js';
@@ -152,6 +157,14 @@ export async function exportSqlQuery(
     try {
       if (format === 'json') {
         responseData = await response.json();
+
+        // Check for embedded errors (Metabase returns 200/202 with errors for invalid queries)
+        validateMetabaseResponse(
+          responseData,
+          { operation: 'SQL query export', resourceId: databaseId },
+          logError
+        );
+
         // JSON export format might have different structures, let's be more flexible
         if (responseData && typeof responseData === 'object') {
           // Try different possible structures for row counting
