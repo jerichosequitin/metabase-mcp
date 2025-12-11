@@ -1,6 +1,6 @@
 import { CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 import { MetabaseApiClient, CachedResponse } from '../../api.js';
-import { ErrorCode, McpError, isMcpError } from '../../types/core.js';
+import { ErrorCode, McpError } from '../../types/core.js';
 import {
   ResourceNotFoundErrorFactory,
   AuthorizationErrorFactory,
@@ -298,19 +298,6 @@ export async function handleRetrieve(
       } catch (error: any) {
         const errorMessage = error?.message || error?.data?.message || 'Unknown error';
         logWarn(`Failed to retrieve ${validatedModel} ${id}: ${errorMessage}`, { requestId });
-
-        // Check if this is an enhanced error with specific categories
-        if (isMcpError(error)) {
-          return {
-            success: false,
-            id,
-            error: errorMessage,
-            category: error.details.category,
-            retryable: error.details.retryable,
-            httpStatus: error.details.httpStatus,
-          };
-        }
-
         return { success: false, id, error: errorMessage };
       }
     };
@@ -332,25 +319,11 @@ export async function handleRetrieve(
 
       batchResults.forEach(result => {
         if (result.status === 'fulfilled') {
-          const {
-            success,
-            id,
-            result: itemResult,
-            error,
-            category,
-            retryable,
-            httpStatus,
-          } = result.value;
+          const { success, id, result: itemResult, error } = result.value;
           if (success) {
             results.push(itemResult);
           } else {
-            errors.push({
-              id,
-              error,
-              category: category || 'unknown',
-              retryable: retryable !== undefined ? retryable : true,
-              httpStatus,
-            });
+            errors.push({ id, error });
           }
         } else {
           // This shouldn't happen with our current implementation, but handle it gracefully

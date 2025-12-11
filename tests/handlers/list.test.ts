@@ -105,7 +105,7 @@ describe('handleList', () => {
 
       await expect(
         handleList(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
-      ).rejects.toThrow(McpError);
+      ).rejects.toThrow();
     });
   });
 

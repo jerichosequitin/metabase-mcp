@@ -488,7 +488,7 @@ describe('handleExecute (execute command)', () => {
 
       await expect(
         handleExecute(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
-      ).rejects.toThrow(McpError);
+      ).rejects.toThrow();
     });
   });
 
@@ -643,7 +643,7 @@ describe('handleExecute (execute command)', () => {
 
       await expect(
         handleExecute(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
-      ).rejects.toThrow(McpError);
+      ).rejects.toThrow();
     });
 
     it('should handle card parameter validation errors with improved error messaging', async () => {
@@ -756,7 +756,7 @@ describe('handleExecute (execute command)', () => {
 
       await expect(
         handleExecute(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
-      ).rejects.toThrow(McpError);
+      ).rejects.toThrow();
 
       // Verify that parameter validation error was logged
       expect(mockLogger.logError).toHaveBeenCalledWith(

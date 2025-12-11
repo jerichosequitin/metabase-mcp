@@ -216,7 +216,7 @@ describe('handleSearch', () => {
 
       await expect(
         handleSearch(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
-      ).rejects.toThrow(McpError);
+      ).rejects.toThrow();
     });
   });
 

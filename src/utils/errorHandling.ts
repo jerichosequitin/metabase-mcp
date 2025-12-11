@@ -2,7 +2,7 @@
  * Error handling utilities for the Metabase MCP server.
  */
 
-import { ErrorCode, McpError, ErrorCategory, RecoveryAction } from '../types/core.js';
+import { ErrorCode, McpError } from '../types/core.js';
 import { createErrorFromHttpResponse, ValidationErrorFactory } from './errorFactory.js';
 
 /**
@@ -49,14 +49,14 @@ export interface ErrorContext {
 }
 
 /**
- * Centralized error handling utility that creates consistent McpError instances
- * with detailed context and actionable guidance for AI agents
+ * Centralized error handling utility that creates consistent error instances
+ * with descriptive messages for AI agents
  */
 export function handleApiError(
   error: any,
   context: ErrorContext,
   logError: (message: string, error: unknown) => void
-): McpError {
+): Error {
   logError(`${context.operation} failed`, error);
 
   // Extract detailed error information
@@ -119,7 +119,7 @@ export function handleApiError(
     error
   );
 
-  return new McpError(ErrorCode.InternalError, errorMessage);
+  return new Error(errorMessage);
 }
 
 /**
@@ -272,22 +272,7 @@ export function validateMetabaseResponse(
     // Fallback to generic parameter error
     throw new McpError(
       ErrorCode.InvalidParams,
-      `${context.operation} parameter validation failed: ${response.error || 'Invalid parameter values'}`,
-      {
-        category: ErrorCategory.VALIDATION,
-        httpStatus: 400,
-        userMessage: `${context.operation} parameter validation failed due to type mismatch.`,
-        agentGuidance: `${context.operation} failed due to parameter validation errors. Check parameter types and values. Consider using execute_query with the card's SQL for more flexible parameter handling.`,
-        recoveryAction: RecoveryAction.VALIDATE_INPUT,
-        retryable: false,
-        additionalContext: { response },
-        troubleshootingSteps: [
-          'Verify parameter types match expected parameter types',
-          'Check parameter values are in the correct format',
-          'Use the retrieve tool to get resource details and parameter requirements',
-          "Consider using execute_query with the card's SQL for more flexible parameter handling",
-        ],
-      }
+      `${context.operation} parameter validation failed: ${response.error || 'Invalid parameter values'}`
     );
   }
 
@@ -306,25 +291,6 @@ export function validateMetabaseResponse(
       response
     );
 
-    throw new McpError(
-      ErrorCode.InternalError,
-      `${context.operation} failed: ${response.error || 'Unknown error'}`,
-      {
-        category: ErrorCategory.EXTERNAL_SERVICE,
-        httpStatus: 500,
-        userMessage: `${context.operation} failed due to a server error.`,
-        agentGuidance: `${context.operation} failed with error type '${response.error_type}'. This may be temporary. Try again or check your request parameters.`,
-        recoveryAction: RecoveryAction.RETRY_WITH_BACKOFF,
-        retryable: true,
-        retryAfterMs: 3000,
-        additionalContext: { response },
-        troubleshootingSteps: [
-          'Check if the error is temporary and retry',
-          'Verify your request parameters are correct',
-          'Check the server logs for more details',
-          'Contact support if the issue persists',
-        ],
-      }
-    );
+    throw new Error(`${context.operation} failed: ${response.error || 'Unknown error'}`);
   }
 }
