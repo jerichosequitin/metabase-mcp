@@ -234,6 +234,34 @@ describe('handleSearch', () => {
       );
     });
 
+    it('should throw error when max_results is 0', async () => {
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+      const request = createMockRequest('search', { query: 'test', max_results: 0 });
+
+      await expect(
+        handleSearch(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        'Invalid max_results parameter - must be a positive number',
+        expect.objectContaining({ requestId: 'test-request-id' })
+      );
+    });
+
+    it('should throw error when max_results exceeds 50', async () => {
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+      const request = createMockRequest('search', { query: 'test', max_results: 100 });
+
+      await expect(
+        handleSearch(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        'max_results exceeds maximum allowed value',
+        expect.objectContaining({ requestId: 'test-request-id', maxResults: 100 })
+      );
+    });
+
     it('should use search_native_query parameter', async () => {
       const searchResults = [sampleCard];
       mockApiClient.request.mockResolvedValue(searchResults);

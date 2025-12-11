@@ -202,10 +202,10 @@ export class MetabaseServer {
                 },
                 max_results: {
                   type: 'number',
-                  description: 'Maximum number of results to return (default: 50)',
+                  description: 'Maximum number of results to return (default: 20, max: 50)',
                   minimum: 1,
-                  maximum: 200,
-                  default: 50,
+                  maximum: 50,
+                  default: 20,
                 },
                 search_native_query: {
                   type: 'boolean',
