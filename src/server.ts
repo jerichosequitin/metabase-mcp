@@ -36,7 +36,7 @@ export class MetabaseServer {
     this.server = new Server(
       {
         name: 'metabase-mcp',
-        version: '1.1.1',
+        version: '1.1.2',
       },
       {
         capabilities: {
