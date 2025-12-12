@@ -144,7 +144,6 @@ export async function handleRetrieve(
   logDebug(`Retrieving ${validatedModel} details for IDs: ${numericIds.join(', ')}`);
 
   try {
-    const startTime = Date.now();
     const results: any[] = [];
     const errors: Array<{
       id: number;
@@ -332,26 +331,15 @@ export async function handleRetrieve(
       });
     }
 
-    const totalTime = Date.now() - startTime;
     const successCount = results.length;
     const errorCount = errors.length;
 
-    // Create detailed data source information
+    // Create data source information
     const dataSource = {
-      cache_hits: cacheHits,
-      api_calls: apiHits,
-      total_successful: successCount,
-      primary_source: cacheHits > apiHits ? 'cache' : apiHits > cacheHits ? 'api' : 'mixed',
+      cache: cacheHits,
+      api: apiHits,
     };
-
-    // Calculate performance metrics
-    const averageTimePerItem = Math.round(totalTime / numericIds.length);
-    const concurrencyUsed = Math.min(CONCURRENT_LIMIT, numericIds.length);
-    const estimatedSequentialTime = averageTimePerItem * numericIds.length;
-    const timesSaved =
-      numericIds.length > 1
-        ? Math.round(((estimatedSequentialTime - totalTime) / estimatedSequentialTime) * 100)
-        : 0;
+    const primarySource = cacheHits > apiHits ? 'cache' : apiHits > cacheHits ? 'api' : 'mixed';
 
     // Handle scenarios where all or most requests failed
     if (successCount === 0 && errorCount > 0) {
@@ -392,35 +380,16 @@ export async function handleRetrieve(
     // Create response object
     const response: any = {
       model: validatedModel,
-      request_id: requestId,
       total_requested: numericIds.length,
       successful_retrievals: successCount,
       failed_retrievals: errorCount,
-      data_source: dataSource,
-      performance_metrics: {
-        total_time_ms: totalTime,
-        average_time_per_item_ms: averageTimePerItem,
-        concurrency_used: concurrencyUsed,
-      },
-      retrieved_at: new Date().toISOString(),
+      source: dataSource,
       results: results,
     };
 
     // Add errors if any occurred
     if (errors.length > 0) {
       response.errors = errors;
-      response.message = `Retrieved ${successCount}/${numericIds.length} ${validatedModel}s successfully. ${errorCount} failed.`;
-    } else {
-      response.message = `Successfully retrieved all ${successCount} ${validatedModel}(s).`;
-    }
-
-    // Add performance info based on data source
-    if (dataSource.primary_source === 'cache') {
-      response.performance_note = `Data retrieved primarily from cache (${cacheHits} cache hits, ${apiHits} API calls)${timesSaved > 0 ? ` with ${timesSaved}% time savings from concurrent processing` : ''}`;
-    } else if (dataSource.primary_source === 'api') {
-      response.performance_note = `Data retrieved primarily via API calls (${apiHits} API calls, ${cacheHits} cache hits)${timesSaved > 0 ? ` with ${timesSaved}% time savings from concurrent processing` : ''} - now cached for future requests`;
-    } else {
-      response.performance_note = `Data retrieved from mixed sources (${cacheHits} cache hits, ${apiHits} API calls)${timesSaved > 0 ? ` with ${timesSaved}% time savings from concurrent processing` : ''}`;
     }
 
     // Add usage guidance based on model type
@@ -458,8 +427,8 @@ export async function handleRetrieve(
 
     const logMessage =
       errorCount > 0
-        ? `Retrieved ${successCount}/${numericIds.length} ${validatedModel}s (${errorCount} errors, source: ${dataSource.primary_source})`
-        : `Successfully retrieved ${successCount} ${validatedModel}s (source: ${dataSource.primary_source})`;
+        ? `Retrieved ${successCount}/${numericIds.length} ${validatedModel}s (${errorCount} errors, source: ${primarySource})`
+        : `Successfully retrieved ${successCount} ${validatedModel}s (source: ${primarySource})`;
 
     logInfo(logMessage);
 
