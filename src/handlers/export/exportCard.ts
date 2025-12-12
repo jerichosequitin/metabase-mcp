@@ -1,5 +1,10 @@
 import { MetabaseApiClient } from '../../api.js';
-import { handleApiError, sanitizeFilename, analyzeXlsxContent } from '../../utils/index.js';
+import {
+  handleApiError,
+  sanitizeFilename,
+  analyzeXlsxContent,
+  validateMetabaseResponse,
+} from '../../utils/index.js';
 import { config, authMethod, AuthMethod } from '../../config.js';
 import * as XLSX from 'xlsx';
 import { CardExportParams, ExportResponse } from './types.js';
@@ -130,11 +135,13 @@ export async function exportCard(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMessage = `Export API request failed with status ${response.status}: ${response.statusText}`;
+      // Extract actual error message from response body, fallback to statusText
+      const actualError = errorData?.message || errorData?.error || response.statusText;
+      const errorMessage = `Export API request failed with status ${response.status}: ${actualError}`;
       logWarn(errorMessage, errorData);
       throw {
         status: response.status,
-        message: response.statusText,
+        message: actualError,
         data: errorData,
       };
     }
@@ -144,39 +151,81 @@ export async function exportCard(
     let rowCount: number | undefined = 0;
     let fileSize = 0;
 
-    try {
-      if (format === 'json') {
-        responseData = await response.json();
-        // JSON export format might have different structures, let's be more flexible
-        if (responseData && typeof responseData === 'object') {
-          // Try different possible structures for row counting
-          rowCount =
-            responseData?.data?.rows?.length ??
-            responseData?.rows?.length ??
-            (Array.isArray(responseData) ? responseData.length : 0);
-        }
-        logDebug(`JSON export row count: ${rowCount}`);
-      } else if (format === 'csv') {
-        responseData = await response.text();
-        // Count rows for CSV (subtract header row)
-        const rows = responseData.split('\n').filter((row: string) => row.trim());
-        rowCount = Math.max(0, rows.length - 1);
-        logDebug(`CSV export row count: ${rowCount}`);
-      } else if (format === 'xlsx') {
-        responseData = await response.arrayBuffer();
-        fileSize = responseData.byteLength;
+    if (format === 'json') {
+      responseData = await response.json();
 
-        // Analyze XLSX content to get accurate row count and data validation
-        const xlsxAnalysis = analyzeXlsxContent(responseData);
-        rowCount = xlsxAnalysis.rowCount;
+      // Check for embedded errors (Metabase returns 200/202 with errors for invalid queries)
+      validateMetabaseResponse(
+        responseData,
+        { operation: 'Card export', resourceId: cardId },
+        logError
+      );
 
-        logDebug(
-          `XLSX export - file size: ${fileSize} bytes, rows: ${rowCount}, has data: ${xlsxAnalysis.hasData}`
-        );
+      // JSON export format might have different structures, let's be more flexible
+      if (responseData && typeof responseData === 'object') {
+        // Try different possible structures for row counting
+        rowCount =
+          responseData?.data?.rows?.length ??
+          responseData?.rows?.length ??
+          (Array.isArray(responseData) ? responseData.length : 0);
       }
-    } catch (parseError) {
-      logError(`Failed to parse ${format} response: ${parseError}`, parseError);
-      throw new Error(`Failed to parse ${format} response: ${parseError}`);
+      logDebug(`JSON export row count: ${rowCount}`);
+    } else if (format === 'csv') {
+      responseData = await response.text();
+
+      // Check if Metabase returned JSON error instead of CSV (starts with '{')
+      if (responseData.trim().startsWith('{')) {
+        let errorResponse;
+        try {
+          errorResponse = JSON.parse(responseData);
+        } catch {
+          // Not valid JSON, continue with CSV processing
+          errorResponse = null;
+        }
+        if (errorResponse) {
+          validateMetabaseResponse(
+            errorResponse,
+            { operation: 'Card export', resourceId: cardId },
+            logError
+          );
+        }
+      }
+
+      // Count rows for CSV (subtract header row)
+      const rows = responseData.split('\n').filter((row: string) => row.trim());
+      rowCount = Math.max(0, rows.length - 1);
+      logDebug(`CSV export row count: ${rowCount}`);
+    } else if (format === 'xlsx') {
+      responseData = await response.arrayBuffer();
+      fileSize = responseData.byteLength;
+
+      // Check if Metabase returned JSON error instead of XLSX
+      // Valid XLSX files start with PK (ZIP signature), not '{', so check first bytes
+      const textContent = new TextDecoder().decode(responseData);
+      if (textContent.trim().startsWith('{')) {
+        let errorResponse;
+        try {
+          errorResponse = JSON.parse(textContent);
+        } catch {
+          // Not valid JSON, continue with XLSX processing
+          errorResponse = null;
+        }
+        if (errorResponse) {
+          validateMetabaseResponse(
+            errorResponse,
+            { operation: 'Card export', resourceId: cardId },
+            logError
+          );
+        }
+      }
+
+      // Analyze XLSX content to get accurate row count and data validation
+      const xlsxAnalysis = analyzeXlsxContent(responseData);
+      rowCount = xlsxAnalysis.rowCount;
+
+      logDebug(
+        `XLSX export - file size: ${fileSize} bytes, rows: ${rowCount}, has data: ${xlsxAnalysis.hasData}`
+      );
     }
 
     // Validate that we have data before proceeding with file operations
@@ -191,11 +240,7 @@ export async function exportCard(
             text: JSON.stringify(
               {
                 success: false,
-                message: 'Card executed successfully but returned no data to export',
-                card_id: cardId,
-                card_name: cardName,
-                format: format,
-                row_count: rowCount,
+                error: 'Card returned no data to export',
               },
               null,
               2
@@ -253,19 +298,8 @@ export async function exportCard(
     if (fileSaveError) {
       const errorResponse: any = {
         success: false,
-        message: 'Export completed but failed to save file',
         error: fileSaveError,
-        card_id: cardId,
-        card_name: cardName,
-        format: format,
-        row_count: rowCount,
-        intended_file_path: savedFilePath,
       };
-
-      // Add file size for all formats
-      if (fileSize > 0) {
-        errorResponse.file_size_bytes = fileSize;
-      }
 
       return {
         content: [
@@ -284,19 +318,10 @@ export async function exportCard(
     // Successful export - return standardized JSON response
     const successResponse: any = {
       success: true,
-      message: 'Export completed successfully',
-      card_id: cardId,
-      card_name: cardName,
       file_path: savedFilePath,
-      filename: finalFilename,
-      format: format,
       row_count: rowCount,
       file_size_bytes: fileSize,
       preview_data: previewData,
-      preview_note:
-        previewData.length > 0
-          ? `First ${previewData.length} rows shown (${rowCount} total rows exported)`
-          : 'No preview data available',
     };
 
     return {

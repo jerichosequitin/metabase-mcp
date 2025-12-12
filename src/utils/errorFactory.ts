@@ -181,7 +181,8 @@ export function createErrorFromHttpResponse(
       ) {
         return DatabaseErrorFactory.queryExecutionError(errorMessage);
       }
-      return new Error(`Server error: ${errorMessage}`);
+      // Pass through the error message directly - it's already descriptive
+      return new Error(errorMessage);
 
     case 502:
     case 503:
