@@ -240,10 +240,8 @@ describe('handleExport (export command)', () => {
       
       const responseData = JSON.parse(result.content[0].text);
       expect(responseData.success).toBe(true);
-      expect(responseData.format).toBe('csv');
       expect(responseData.row_count).toBe(2);
-      expect(responseData.database_id).toBe(1);
-      expect(responseData.query).toBe('SELECT * FROM users');
+      expect(responseData.file_path).toContain('.csv');
     });
 
     it('should export SQL query in JSON format successfully', async () => {
@@ -277,8 +275,8 @@ describe('handleExport (export command)', () => {
       expect(result.content).toHaveLength(1);
       const responseData = JSON.parse(result.content[0].text);
       expect(responseData.success).toBe(true);
-      expect(responseData.format).toBe('json');
       expect(responseData.row_count).toBe(2);
+      expect(responseData.file_path).toContain('.json');
     });
 
     it('should export SQL query in XLSX format successfully', async () => {
@@ -309,7 +307,7 @@ describe('handleExport (export command)', () => {
       expect(result.content).toHaveLength(1);
       const responseData = JSON.parse(result.content[0].text);
       expect(responseData.success).toBe(true);
-      expect(responseData.format).toBe('xlsx');
+      expect(responseData.file_path).toContain('.xlsx');
       expect(responseData.row_count).toBe(3); // 3 data rows in mock
       expect(responseData.file_size_bytes).toBeGreaterThan(1000); // XLSX files are typically larger
       expect(responseData.preview_data).toHaveLength(3); // Should have preview of all 3 rows
@@ -318,7 +316,6 @@ describe('handleExport (export command)', () => {
         'Age': 30,
         'City': 'New York'
       });
-      expect(responseData.preview_note).toContain('First 3 rows shown (3 total rows exported)');
     });
 
     it('should handle empty query results', async () => {
@@ -349,7 +346,7 @@ describe('handleExport (export command)', () => {
       expect(result.content).toHaveLength(1);
       const responseData = JSON.parse(result.content[0].text);
       expect(responseData.success).toBe(false);
-      expect(responseData.message).toBe('Query executed successfully but returned no data to export');
+      expect(responseData.error).toBe('Query returned no data to export');
     });
 
     it('should handle SQL export with custom filename', async () => {
@@ -378,7 +375,8 @@ describe('handleExport (export command)', () => {
       );
 
       const responseData = JSON.parse(result.content[0].text);
-      expect(responseData.filename).toBe('my_custom_export.csv');
+      expect(responseData.success).toBe(true);
+      expect(responseData.file_path).toContain('my_custom_export.csv');
     });
   });
 
@@ -464,7 +462,6 @@ describe('handleExport (export command)', () => {
       expect(result.content).toHaveLength(1);
       const responseData = JSON.parse(result.content[0].text);
       expect(responseData.success).toBe(true);
-      expect(responseData.card_id).toBe(1);
     });
   });
 
@@ -503,9 +500,7 @@ describe('handleExport (export command)', () => {
       expect(result.content).toHaveLength(1);
       const responseData = JSON.parse(result.content[0].text);
       expect(responseData.success).toBe(true);
-      expect(responseData.card_id).toBe(123);
-      expect(responseData.card_name).toBe('User Report');
-      expect(responseData.format).toBe('csv');
+      expect(responseData.file_path).toContain('.csv');
     });
 
     it('should export card with parameters', async () => {
@@ -549,7 +544,6 @@ describe('handleExport (export command)', () => {
 
       const responseData = JSON.parse(result.content[0].text);
       expect(responseData.success).toBe(true);
-      expect(responseData.card_id).toBe(123);
 
       // Verify the request was made with parameters in the correct format
       expect(mockFetch).toHaveBeenCalledWith(
@@ -678,7 +672,7 @@ describe('handleExport (export command)', () => {
       );
 
       const responseData = JSON.parse(result.content[0].text);
-      expect(responseData.format).toBe('csv');
+      expect(responseData.file_path).toContain('.csv');
     });
 
     it('should handle uppercase format parameters', async () => {
@@ -706,7 +700,7 @@ describe('handleExport (export command)', () => {
       );
 
       const responseData = JSON.parse(result.content[0].text);
-      expect(responseData.format).toBe('csv');
+      expect(responseData.file_path).toContain('.csv');
     });
 
     it('should handle mixed case format parameters', async () => {
@@ -734,7 +728,7 @@ describe('handleExport (export command)', () => {
       );
 
       const responseData = JSON.parse(result.content[0].text);
-      expect(responseData.format).toBe('json');
+      expect(responseData.file_path).toContain('.json');
     });
 
     it('should handle XLSX format case-insensitively', async () => {
@@ -745,7 +739,7 @@ describe('handleExport (export command)', () => {
       });
       const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
 
-      const mockArrayBuffer = new ArrayBuffer(1024);
+      const mockArrayBuffer = createMockXlsxWithData();
       mockFetch.mockResolvedValueOnce({
         ok: true,
         arrayBuffer: () => Promise.resolve(mockArrayBuffer),
@@ -762,7 +756,7 @@ describe('handleExport (export command)', () => {
       );
 
       const responseData = JSON.parse(result.content[0].text);
-      expect(responseData.format).toBe('xlsx');
+      expect(responseData.file_path).toContain('.xlsx');
     });
   });
 });

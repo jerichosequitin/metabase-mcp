@@ -164,7 +164,7 @@ export function validateRowLimit(
   requestId: string,
   logWarn: (message: string, data?: unknown, error?: Error) => void,
   min: number = 1,
-  max: number = 2000
+  max: number = 500
 ): asserts value is number {
   if (typeof value !== 'number' || !Number.isInteger(value) || value < min || value > max) {
     const errorMessage = `Invalid ${fieldName} parameter: ${value}. Must be between ${min} and ${max}.`;

@@ -168,7 +168,7 @@ describe('handleExecute (execute command)', () => {
       ).rejects.toThrow(McpError);
 
       expect(mockLogger.logWarn).toHaveBeenCalledWith(
-        'Invalid row_limit parameter: 0. Must be between 1 and 2000.',
+        'Invalid row_limit parameter: 0. Must be between 1 and 500.',
         { requestId: 'test-request-id' }
       );
     });
@@ -177,7 +177,7 @@ describe('handleExecute (execute command)', () => {
       const request = createMockRequest('execute', {
         database_id: 1,
         query: 'SELECT 1',
-        row_limit: 3000
+        row_limit: 600
       });
       const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
 
@@ -186,7 +186,7 @@ describe('handleExecute (execute command)', () => {
       ).rejects.toThrow(McpError);
 
       expect(mockLogger.logWarn).toHaveBeenCalledWith(
-        'Invalid row_limit parameter: 3000. Must be between 1 and 2000.',
+        'Invalid row_limit parameter: 600. Must be between 1 and 500.',
         { requestId: 'test-request-id' }
       );
     });
@@ -355,7 +355,7 @@ describe('handleExecute (execute command)', () => {
         body: JSON.stringify({
           type: 'native',
           native: {
-            query: 'SELECT * FROM users LIMIT 500',
+            query: 'SELECT * FROM users LIMIT 100',
             template_tags: {},
           },
           parameters: [],
@@ -467,7 +467,7 @@ describe('handleExecute (execute command)', () => {
         body: JSON.stringify({
           type: 'native',
           native: {
-            query: 'SELECT * FROM users WHERE id = {{user_id}} LIMIT 500',
+            query: 'SELECT * FROM users WHERE id = {{user_id}} LIMIT 100',
             template_tags: {},
           },
           parameters: nativeParameters,
@@ -776,7 +776,7 @@ describe('handleExecute (execute command)', () => {
       await handleExecute(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError);
 
       expect(mockLogger.logDebug).toHaveBeenCalledWith(
-        'Executing card ID: 123 with row limit: 500'
+        'Executing card ID: 123 with row limit: 100'
       );
       expect(mockLogger.logInfo).toHaveBeenCalledWith(
         'Successfully executed card: 123, returned 2 rows (original: 2)'
@@ -801,7 +801,7 @@ describe('handleExecute (execute command)', () => {
         body: JSON.stringify({
           type: 'native',
           native: {
-            query: 'SELECT * FROM users LIMIT 500',
+            query: 'SELECT * FROM users LIMIT 100',
             template_tags: {},
           },
           parameters: [],
@@ -826,7 +826,7 @@ describe('handleExecute (execute command)', () => {
         body: JSON.stringify({
           type: 'native',
           native: {
-            query: 'SELECT * FROM users LIMIT 500;',
+            query: 'SELECT * FROM users LIMIT 100;',
             template_tags: {},
           },
           parameters: [],
@@ -849,7 +849,7 @@ describe('handleExecute (execute command)', () => {
       await handleExecute(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError);
 
       expect(mockLogger.logDebug).toHaveBeenCalledWith(
-        'Executing SQL query against database ID: 1 with row limit: 500'
+        'Executing SQL query against database ID: 1 with row limit: 100'
       );
     });
 
@@ -887,7 +887,7 @@ describe('handleExecute (execute command)', () => {
         body: JSON.stringify({
           type: 'native',
           native: {
-            query: 'SELECT * FROM users LIMIT 500',
+            query: 'SELECT * FROM users LIMIT 100',
             template_tags: {},
           },
           parameters: [],
@@ -912,7 +912,7 @@ describe('handleExecute (execute command)', () => {
         body: JSON.stringify({
           type: 'native',
           native: {
-            query: 'SELECT * FROM users LIMIT 500',
+            query: 'SELECT * FROM users LIMIT 100',
             template_tags: {},
           },
           parameters: [],

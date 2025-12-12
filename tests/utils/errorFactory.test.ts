@@ -207,7 +207,61 @@ describe('ErrorFactory', () => {
       expect(mockLogError).not.toHaveBeenCalled();
     });
 
-    it('should throw McpError for invalid-parameter error type with detailed error data', () => {
+    // Card-specific error handling tests
+    it('should throw Error for card invalid parameter name (Test 1 pattern)', () => {
+      const errorResponse = {
+        message: 'Invalid parameter: Card 38 does not have a template tag named "fake_param".',
+        'invalid-parameter': {
+          id: 'fake-uuid',
+          type: 'id',
+          slug: 'fake_param',
+          value: '123'
+        }
+      };
+
+      expect(() => {
+        validateMetabaseResponse(errorResponse, { operation: 'Card export', resourceId: 38 }, mockLogError);
+      }).toThrowError('Invalid parameter: Card 38 does not have a template tag named "fake_param".');
+
+      expect(mockLogError).toHaveBeenCalledWith('Card export parameter validation failed for 38', errorResponse);
+    });
+
+    it('should throw Error for card invalid parameter value with via[].error (Test 2 pattern)', () => {
+      const errorResponse = {
+        error_type: 'invalid-parameter',
+        status: 'failed',
+        error: 'For input string: "not"',
+        via: [{
+          error_type: 'invalid-parameter',
+          error: 'Error determining value for parameter "account_id": For input string: "not"',
+          'ex-data': {
+            tag: { name: 'account_id', type: 'dimension' },
+            params: [{ value: 'not_a_number' }]
+          }
+        }]
+      };
+
+      expect(() => {
+        validateMetabaseResponse(errorResponse, { operation: 'Card execution', resourceId: 123 }, mockLogError);
+      }).toThrowError('Error determining value for parameter "account_id": For input string: "not"');
+
+      expect(mockLogError).toHaveBeenCalledWith('Card execution parameter validation failed for 123', errorResponse);
+    });
+
+    it('should throw Error for card invalid-parameter with fallback to top-level error', () => {
+      const errorResponse = {
+        error_type: 'invalid-parameter',
+        status: 'failed',
+        error: 'Parameter validation failed'
+      };
+
+      expect(() => {
+        validateMetabaseResponse(errorResponse, { operation: 'Card execution', resourceId: 456 }, mockLogError);
+      }).toThrowError('Parameter validation failed');
+    });
+
+    // Query-specific error handling tests
+    it('should throw McpError for query invalid-parameter error type with ex-data', () => {
       const errorResponse = {
         error_type: 'invalid-parameter',
         status: 'failed',
@@ -222,22 +276,10 @@ describe('ErrorFactory', () => {
       };
 
       expect(() => {
-        validateMetabaseResponse(errorResponse, { operation: 'Card execution', resourceId: 123 }, mockLogError);
+        validateMetabaseResponse(errorResponse, { operation: 'SQL query execution', resourceId: 123 }, mockLogError);
       }).toThrow(McpError);
 
-      expect(mockLogError).toHaveBeenCalledWith('Card execution parameter validation failed for 123', errorResponse);
-    });
-
-    it('should throw McpError for invalid-parameter error type with fallback error', () => {
-      const errorResponse = {
-        error_type: 'invalid-parameter',
-        status: 'failed',
-        error: 'Parameter validation failed'
-      };
-
-      expect(() => {
-        validateMetabaseResponse(errorResponse, { operation: 'Card execution', resourceId: 456 }, mockLogError);
-      }).toThrowError('Card execution parameter validation failed: Parameter validation failed');
+      expect(mockLogError).toHaveBeenCalledWith('SQL query execution parameter validation failed for 123', errorResponse);
     });
 
     it('should throw Error for failed status with error message', () => {
@@ -248,7 +290,7 @@ describe('ErrorFactory', () => {
 
       expect(() => {
         validateMetabaseResponse(errorResponse, { operation: 'Query execution' }, mockLogError);
-      }).toThrowError('Query execution failed: Database connection failed.');
+      }).toThrowError('Database connection failed.');
     });
 
     it('should throw Error for other error types with failed status', () => {
@@ -260,7 +302,7 @@ describe('ErrorFactory', () => {
 
       expect(() => {
         validateMetabaseResponse(errorResponse, { operation: 'Query execution' }, mockLogError);
-      }).toThrowError('Query execution failed: Database timeout.');
+      }).toThrowError('Database timeout.');
     });
   });
 

@@ -212,16 +212,16 @@ export class MetabaseApiClient {
         throw NetworkErrorFactory.connectionError(this.baseUrl);
       }
 
-      // If it's already an enhanced McpError, re-throw it
-      if (isMcpError(error)) {
+      // If it's already an enhanced McpError or Error, re-throw it
+      if (isMcpError(error) || error instanceof Error) {
         throw error;
       }
 
-      // For other errors, wrap in generic network error
+      // For unknown errors, wrap in generic error
       this.logError(`Unexpected error for request to ${path}`, error);
       throw new McpError(
         ErrorCode.InternalError,
-        `Unexpected error during API request: ${error instanceof Error ? error.message : String(error)}`
+        `Unexpected error during API request: ${String(error)}`
       );
     }
   }

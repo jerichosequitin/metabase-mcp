@@ -32,7 +32,7 @@ export async function handleExecute(
   const nativeParameters = Array.isArray(args?.native_parameters) ? args.native_parameters : [];
   const cardParameters = Array.isArray(args?.card_parameters) ? args.card_parameters : [];
   const rowLimitArg = args?.row_limit;
-  const rowLimit = typeof rowLimitArg === 'number' ? rowLimitArg : 500;
+  const rowLimit = typeof rowLimitArg === 'number' ? rowLimitArg : 100;
 
   // First validate that parameter types are correct
   if (cardId !== undefined && typeof cardId !== 'number') {
@@ -114,13 +114,13 @@ export async function handleExecute(
     validatePositiveInteger(cardId, 'card_id', requestId, logWarn);
 
     // Validate row limit for cards
-    if (rowLimit < 1 || rowLimit > 2000) {
-      logWarn(`Invalid row_limit parameter: ${rowLimit}. Must be between 1 and 2000.`, {
+    if (rowLimit < 1 || rowLimit > 500) {
+      logWarn(`Invalid row_limit parameter: ${rowLimit}. Must be between 1 and 500.`, {
         requestId,
       });
       throw new McpError(
         ErrorCode.InvalidParams,
-        'Row limit must be between 1 and 2000. For larger datasets, use export_query instead.'
+        'Row limit must be between 1 and 500. For larger datasets, use the export tool instead.'
       );
     }
 
@@ -164,11 +164,11 @@ export async function handleExecute(
   }
 
   // Validate row limit for SQL queries
-  if (rowLimit < 1 || rowLimit > 2000) {
-    logWarn(`Invalid row_limit parameter: ${rowLimit}. Must be between 1 and 2000.`, { requestId });
+  if (rowLimit < 1 || rowLimit > 500) {
+    logWarn(`Invalid row_limit parameter: ${rowLimit}. Must be between 1 and 500.`, { requestId });
     throw new McpError(
       ErrorCode.InvalidParams,
-      'Row limit must be between 1 and 2000. For larger datasets, use export_query instead.'
+      'Row limit must be between 1 and 500. For larger datasets, use the export tool instead.'
     );
   }
 

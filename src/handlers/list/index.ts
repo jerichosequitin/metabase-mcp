@@ -67,11 +67,9 @@ export async function handleList(
   );
 
   try {
-    const startTime = Date.now();
     let optimizeFunction: (item: any) => any;
     let apiResponse: any;
     let dataSource: 'cache' | 'api';
-    let fetchTime: number;
 
     switch (validatedModel) {
       case 'cards': {
@@ -79,7 +77,6 @@ export async function handleList(
         const cardsResponse = await apiClient.getCardsList();
         apiResponse = cardsResponse.data;
         dataSource = cardsResponse.source;
-        fetchTime = cardsResponse.fetchTime;
         break;
       }
       case 'dashboards': {
@@ -87,7 +84,6 @@ export async function handleList(
         const dashboardsResponse = await apiClient.getDashboardsList();
         apiResponse = dashboardsResponse.data;
         dataSource = dashboardsResponse.source;
-        fetchTime = dashboardsResponse.fetchTime;
         break;
       }
       case 'tables': {
@@ -95,7 +91,6 @@ export async function handleList(
         const tablesResponse = await apiClient.getTablesList();
         apiResponse = tablesResponse.data;
         dataSource = tablesResponse.source;
-        fetchTime = tablesResponse.fetchTime;
         break;
       }
       case 'databases': {
@@ -103,7 +98,6 @@ export async function handleList(
         const databasesResponse = await apiClient.getDatabasesList();
         apiResponse = databasesResponse.data;
         dataSource = databasesResponse.source;
-        fetchTime = databasesResponse.fetchTime;
         break;
       }
       case 'collections': {
@@ -111,7 +105,6 @@ export async function handleList(
         const collectionsResponse = await apiClient.getCollectionsList();
         apiResponse = collectionsResponse.data;
         dataSource = collectionsResponse.source;
-        fetchTime = collectionsResponse.fetchTime;
         break;
       }
       default:
@@ -147,7 +140,6 @@ export async function handleList(
     }
 
     const totalItems = paginatedItems.length;
-    const totalTime = Date.now() - startTime;
 
     logDebug(
       `Successfully fetched ${totalItemsBeforePagination} ${validatedModel}${paginationLimit ? ` (returning ${totalItems} paginated items)` : ''}`
@@ -155,22 +147,9 @@ export async function handleList(
 
     // Create response object
     const response: any = {
-      request_id: requestId,
       model: validatedModel,
       total_items: totalItems,
-      data_source: {
-        source: dataSource,
-        fetch_time_ms: fetchTime,
-        cache_status: dataSource === 'cache' ? 'hit' : 'miss',
-      },
-      performance_metrics: {
-        total_time_ms: totalTime,
-        api_fetch_time_ms: fetchTime,
-        optimization_time_ms: totalTime - fetchTime,
-        average_time_per_item_ms:
-          totalItems > 0 ? Math.round((totalTime - fetchTime) / totalItems) : 0,
-      },
-      retrieved_at: new Date().toISOString(),
+      source: dataSource,
       results: paginatedItems,
     };
 
@@ -178,8 +157,6 @@ export async function handleList(
     if (paginationMetadata) {
       response.pagination = paginationMetadata;
     }
-
-    response.message = `Successfully listed ${totalItems} ${validatedModel} (source: ${dataSource}).`;
 
     // Add usage guidance
     if (paginationLimit !== undefined) {

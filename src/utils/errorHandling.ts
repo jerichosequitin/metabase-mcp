@@ -213,6 +213,10 @@ function getGenericErrorMessage(errorMessage: string, context: ErrorContext): st
  * Metabase sometimes returns HTTP 200 responses with error details embedded
  * in the response body rather than using proper HTTP error status codes.
  *
+ * Card and Query APIs return different error structures:
+ * - Card API: Uses `message` field for invalid parameter names, `via[].error` for value errors
+ * - Query API: Uses `status: 'failed'` with `error` field for SQL errors
+ *
  * @param response - The response from Metabase API
  * @param context - Context information for error logging
  * @param logError - Error logging function
@@ -223,34 +227,73 @@ export function validateMetabaseResponse(
   context: { operation: string; resourceId?: string | number },
   logError: (message: string, data?: unknown) => void
 ): void {
-  // Check if the response contains error information (Metabase returns 200 with embedded errors)
-  if (response?.error_type === 'invalid-parameter') {
-    logError(
-      `${context.operation} parameter validation failed${context.resourceId ? ` for ${context.resourceId}` : ''}`,
-      response
-    );
+  const isCardOperation = context.operation.toLowerCase().includes('card');
 
-    // Check for parameter errors in the via array
-    const parameterErrors = response?.via?.filter(
-      (error: any) => error?.error_type === 'invalid-parameter' && error?.['ex-data']
-    );
-
-    if (parameterErrors && parameterErrors.length > 0) {
-      // Use the first parameter error found
-      throw ValidationErrorFactory.cardParameterMismatch(parameterErrors[0]['ex-data']);
+  // Card-specific error handling
+  if (isCardOperation) {
+    // Test 1 pattern: Invalid parameter name (no error_type, has message with "Invalid parameter")
+    if (response?.message && response.message.includes('Invalid parameter')) {
+      logError(
+        `${context.operation} parameter validation failed${context.resourceId ? ` for ${context.resourceId}` : ''}`,
+        response
+      );
+      throw new Error(response.message);
     }
 
-    // Fallback: check top-level ex-data if via array doesn't contain parameter errors
-    const errorDetails = response?.['ex-data'];
-    if (errorDetails) {
-      throw ValidationErrorFactory.cardParameterMismatch(errorDetails);
-    }
+    // Test 2 pattern: Invalid parameter value (has error_type: 'invalid-parameter')
+    if (response?.error_type === 'invalid-parameter') {
+      logError(
+        `${context.operation} parameter validation failed${context.resourceId ? ` for ${context.resourceId}` : ''}`,
+        response
+      );
 
-    // Fallback to generic parameter error
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      `${context.operation} parameter validation failed: ${response.error || 'Invalid parameter values'}`
-    );
+      // Prefer via[].error for more descriptive message
+      const viaError = response?.via?.[0]?.error;
+      if (viaError) {
+        throw new Error(viaError);
+      }
+
+      // Fallback to top-level error
+      if (response?.error) {
+        throw new Error(response.error);
+      }
+
+      // Fallback to generic parameter error
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `${context.operation} parameter validation failed: Invalid parameter values`
+      );
+    }
+  } else {
+    // Query-specific error handling (original behavior)
+    if (response?.error_type === 'invalid-parameter') {
+      logError(
+        `${context.operation} parameter validation failed${context.resourceId ? ` for ${context.resourceId}` : ''}`,
+        response
+      );
+
+      // Check for parameter errors in the via array
+      const parameterErrors = response?.via?.filter(
+        (error: any) => error?.error_type === 'invalid-parameter' && error?.['ex-data']
+      );
+
+      if (parameterErrors && parameterErrors.length > 0) {
+        // Use the first parameter error found
+        throw ValidationErrorFactory.cardParameterMismatch(parameterErrors[0]['ex-data']);
+      }
+
+      // Fallback: check top-level ex-data if via array doesn't contain parameter errors
+      const errorDetails = response?.['ex-data'];
+      if (errorDetails) {
+        throw ValidationErrorFactory.cardParameterMismatch(errorDetails);
+      }
+
+      // Fallback to generic parameter error
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `${context.operation} parameter validation failed: ${response.error || 'Invalid parameter values'}`
+      );
+    }
   }
 
   // Check for query execution errors (status: 'failed' with error message)
@@ -258,7 +301,7 @@ export function validateMetabaseResponse(
   if (response?.status === 'failed' && response?.error) {
     const cleanedError = extractCleanErrorMessage(response.error);
     logError(`${context.operation} failed: ${cleanedError}`, response);
-    throw new Error(`${context.operation} failed: ${cleanedError}`);
+    throw new Error(cleanedError);
   }
 
   // Check for other common embedded error types (legacy handling)
@@ -268,6 +311,6 @@ export function validateMetabaseResponse(
       response
     );
 
-    throw new Error(`${context.operation} failed: ${response.error || 'Unknown error'}`);
+    throw new Error(response.error || 'Unknown error');
   }
 }

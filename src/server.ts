@@ -328,7 +328,7 @@ export class MetabaseServer {
           {
             name: 'execute',
             description:
-              'Unified command to execute SQL queries or run saved cards against Metabase databases. Use Card mode when existing cards have the needed filters. Use SQL mode for custom queries or when cards lack required filters. Returns up to 2000 rows per request. SECURITY WARNING: SQL mode can execute ANY valid SQL including destructive operations (DELETE, UPDATE, DROP, TRUNCATE, ALTER). Use with caution and ensure appropriate database permissions are configured in Metabase. Note: When Read-Only Mode is enabled, write operations will be rejected with an error.',
+              'Unified command to execute SQL queries or run saved cards against Metabase databases. Use Card mode when existing cards have the needed filters. Use SQL mode for custom queries or when cards lack required filters. Returns up to 500 rows per request - for larger datasets, use the export tool instead. SECURITY WARNING: SQL mode can execute ANY valid SQL including destructive operations (DELETE, UPDATE, DROP, TRUNCATE, ALTER). Use with caution and ensure appropriate database permissions are configured in Metabase. Note: When Read-Only Mode is enabled, write operations will be rejected with an error.',
             annotations: {
               readOnlyHint: false,
               destructiveHint: true,
@@ -364,10 +364,11 @@ export class MetabaseServer {
                 },
                 row_limit: {
                   type: 'number',
-                  description: 'Maximum number of rows to return (default: 500, max: 2000)',
-                  default: 500,
+                  description:
+                    'Maximum number of rows to return (default: 100, max: 500). For larger datasets, use the export tool.',
+                  default: 100,
                   minimum: 1,
-                  maximum: 2000,
+                  maximum: 500,
                 },
               },
               required: [],

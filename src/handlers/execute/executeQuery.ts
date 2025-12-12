@@ -155,7 +155,6 @@ export async function executeSqlQuery(
           text: JSON.stringify(
             {
               success: true,
-              query: limitedQuery, // Use the actual executed query
               database_id: databaseId,
               row_count: rowCount,
               applied_limit: finalLimit,

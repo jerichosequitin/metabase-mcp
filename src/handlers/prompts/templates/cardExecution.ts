@@ -33,7 +33,7 @@ You must execute this card and return the data. If filter requirements are provi
      "value": "converted-value"
    }]
    \`\`\`
-   Start with row_limit=500.
+   Start with row_limit=100.
 
 3. **Handle failures** by retrying up to 3 times with different parameter value formats or reduced row limits if needed.
 
