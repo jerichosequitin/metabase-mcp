@@ -1,5 +1,9 @@
 import { MetabaseApiClient } from '../../api.js';
-import { handleApiError, validatePositiveInteger } from '../../utils/index.js';
+import {
+  handleApiError,
+  validatePositiveInteger,
+  validateMetabaseResponse,
+} from '../../utils/index.js';
 import { SqlExecutionParams, ExecutionResponse } from './types.js';
 import { optimizeExecuteData } from './optimizers.js';
 import { config } from '../../config.js';
@@ -129,6 +133,13 @@ export async function executeSqlQuery(
       body: JSON.stringify(queryData),
     });
 
+    // Check for embedded errors in the response (Metabase returns 202 with errors for invalid queries)
+    validateMetabaseResponse(
+      response,
+      { operation: 'SQL query execution', resourceId: databaseId },
+      logError
+    );
+
     const rowCount = response?.data?.rows?.length || 0;
     logInfo(
       `Successfully executed SQL query against database: ${databaseId}, returned ${rowCount} rows (limit: ${finalLimit})`
@@ -163,11 +174,6 @@ export async function executeSqlQuery(
         operation: 'SQL query execution',
         resourceType: 'database',
         resourceId: databaseId as number,
-        customMessages: {
-          '400':
-            'Invalid query parameters or SQL syntax error. Check your query syntax and ensure all table/column names are correct.',
-          '500': 'Database server error. The query may have caused a timeout or database issue.',
-        },
       },
       logError
     );

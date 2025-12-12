@@ -227,15 +227,7 @@ export async function handleList(
   } catch (error: any) {
     throw handleApiError(
       error,
-      {
-        operation: `List ${validatedModel}`,
-        resourceType: validatedModel,
-        customMessages: {
-          '400': `Invalid list parameters. Ensure model type is valid.`,
-          '404': `List endpoint not found for ${validatedModel}. Check that the model type is supported.`,
-          '500': `Metabase server error while listing ${validatedModel}. The server may be experiencing issues.`,
-        },
-      },
+      { operation: `List ${validatedModel}`, resourceType: validatedModel },
       logError
     );
   }

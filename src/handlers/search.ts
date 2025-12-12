@@ -15,7 +15,7 @@ export async function handleSearch(
 ) {
   const searchQuery = request.params?.arguments?.query as string;
   const models = (request.params?.arguments?.models as string[]) || ['card', 'dashboard'];
-  const maxResults = (request.params?.arguments?.max_results as number) || 50;
+  const maxResults = (request.params?.arguments?.max_results as number) ?? 20;
   const searchNativeQuery = (request.params?.arguments?.search_native_query as boolean) || false;
   const includeDashboardQuestions =
     (request.params?.arguments?.include_dashboard_questions as boolean) ?? false;
@@ -27,6 +27,10 @@ export async function handleSearch(
   // Validate positive integer parameters
   if (maxResults !== undefined) {
     validatePositiveInteger(maxResults, 'max_results', requestId, logWarn);
+    if (maxResults > 50) {
+      logWarn('max_results exceeds maximum allowed value', { requestId, maxResults });
+      throw new McpError(ErrorCode.InvalidParams, 'max_results must be at most 50');
+    }
   }
   if (databaseId !== undefined) {
     validatePositiveInteger(databaseId, 'database_id', requestId, logWarn);
@@ -357,12 +361,6 @@ export async function handleSearch(
         operation: 'Search',
         resourceType: databaseId ? 'database' : undefined,
         resourceId: databaseId,
-        customMessages: {
-          '400':
-            'Invalid search parameters. Check model types, database_id, or premium feature requirements (verified parameter).',
-          '403': 'Access denied. You may not have permission to search these items.',
-          '404': 'Search endpoint not found. This Metabase version may not support the search API.',
-        },
       },
       logError
     );

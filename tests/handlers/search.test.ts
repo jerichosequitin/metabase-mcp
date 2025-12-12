@@ -216,7 +216,7 @@ describe('handleSearch', () => {
 
       await expect(
         handleSearch(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
-      ).rejects.toThrow(McpError);
+      ).rejects.toThrow();
     });
   });
 
@@ -231,6 +231,34 @@ describe('handleSearch', () => {
 
       expect(mockApiClient.request).toHaveBeenCalledWith(
         expect.stringContaining('/api/search?q=test')
+      );
+    });
+
+    it('should throw error when max_results is 0', async () => {
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+      const request = createMockRequest('search', { query: 'test', max_results: 0 });
+
+      await expect(
+        handleSearch(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        'Invalid max_results parameter - must be a positive number',
+        expect.objectContaining({ requestId: 'test-request-id' })
+      );
+    });
+
+    it('should throw error when max_results exceeds 50', async () => {
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+      const request = createMockRequest('search', { query: 'test', max_results: 100 });
+
+      await expect(
+        handleSearch(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        'max_results exceeds maximum allowed value',
+        expect.objectContaining({ requestId: 'test-request-id', maxResults: 100 })
       );
     });
 

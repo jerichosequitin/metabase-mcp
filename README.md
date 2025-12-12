@@ -2,7 +2,7 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jerichosequitin/metabase-mcp)
 
-**Version**: 1.1.0
+**Version**: 1.1.1
 
 **Author**: Jericho Sequitin (@jerichosequitin)
 

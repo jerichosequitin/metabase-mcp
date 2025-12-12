@@ -119,19 +119,7 @@ export async function executeCard(
 
     throw handleApiError(
       error,
-      {
-        operation: 'Card execution',
-        resourceType: 'card',
-        resourceId: cardId,
-        customMessages: {
-          '400':
-            "Invalid card parameters or card configuration error. Check that the card exists and all required parameters are provided. If parameter issues persist, consider using execute_query with the card's underlying SQL query instead, which offers more reliable parameter handling.",
-          '404':
-            'Card not found. Verify the card ID exists and you have permission to access it. Alternatively, use execute_query to run the SQL query directly against the database.',
-          '500':
-            "Database server error. The card query may have caused a timeout or database issue. Try using execute_query with the card's SQL query for better error handling and debugging capabilities.",
-        },
-      },
+      { operation: 'Card execution', resourceType: 'card', resourceId: cardId },
       logError
     );
   }

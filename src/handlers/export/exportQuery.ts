@@ -1,5 +1,10 @@
 import { MetabaseApiClient } from '../../api.js';
-import { handleApiError, sanitizeFilename, analyzeXlsxContent } from '../../utils/index.js';
+import {
+  handleApiError,
+  sanitizeFilename,
+  analyzeXlsxContent,
+  validateMetabaseResponse,
+} from '../../utils/index.js';
 import { config, authMethod, AuthMethod } from '../../config.js';
 import * as XLSX from 'xlsx';
 import { SqlExportParams, ExportResponse } from './types.js';
@@ -152,6 +157,14 @@ export async function exportSqlQuery(
     try {
       if (format === 'json') {
         responseData = await response.json();
+
+        // Check for embedded errors (Metabase returns 200/202 with errors for invalid queries)
+        validateMetabaseResponse(
+          responseData,
+          { operation: 'SQL query export', resourceId: databaseId },
+          logError
+        );
+
         // JSON export format might have different structures, let's be more flexible
         if (responseData && typeof responseData === 'object') {
           // Try different possible structures for row counting
@@ -314,17 +327,7 @@ export async function exportSqlQuery(
   } catch (error: any) {
     throw handleApiError(
       error,
-      {
-        operation: 'Export query',
-        resourceType: 'database',
-        resourceId: databaseId,
-        customMessages: {
-          '400':
-            'Invalid query parameters, SQL syntax error, or export format issue. Ensure format is csv, json, or xlsx.',
-          '413': 'Export payload too large. Try reducing the result set size or use query filters.',
-          '500': 'Database server error. The query may have caused a timeout or database issue.',
-        },
-      },
+      { operation: 'Export query', resourceType: 'database', resourceId: databaseId },
       logError
     );
   }
