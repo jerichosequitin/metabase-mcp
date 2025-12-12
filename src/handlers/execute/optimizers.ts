@@ -9,7 +9,6 @@
  */
 export interface OptimizedExecuteData {
   [key: string]: any; // Numbered keys like "0", "1", "2" with row objects
-  row_count: number;
 }
 
 /**
@@ -19,11 +18,8 @@ export interface OptimizedExecuteData {
 export function optimizeExecuteData(responseData: any): OptimizedExecuteData {
   const rows = responseData?.rows || [];
   const cols = responseData?.cols || [];
-  const rowCount = rows.length;
 
-  const optimized: OptimizedExecuteData = {
-    row_count: rowCount,
-  };
+  const optimized: OptimizedExecuteData = {};
 
   // Transform each row from array format to object format
   rows.forEach((row: any[], index: number) => {
