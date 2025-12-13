@@ -98,7 +98,7 @@ export class MetabaseServer {
       } else {
         console.error(`[${timestamp}] ${logPrefix}: ${message}`);
       }
-    } catch (e) {
+    } catch (_e) {
       // Ignore if console is not available
     }
   }
