@@ -2,141 +2,126 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jerichosequitin/metabase-mcp)
 
-**Version**: 1.1.2
+**Version**: 1.1.3
 
 **Author**: Jericho Sequitin (@jerichosequitin)
 
-A high-performance Model Context Protocol server for AI integration with Metabase analytics platforms. Features intelligent caching, response optimization, and comprehensive data access tools.
-
-**Available as an MCP Bundle (MCPB) for Claude Desktop.**
-
-## Installation Options
-
-#### Option 1: MCP Bundle (Recommended for Claude Desktop Users)
-
-1. Download `metabase-mcp.mcpb` from [Releases](https://github.com/jerichosequitin/metabase-mcp/releases)
-2. Open the `.mcpb` file with Claude Desktop to install
-3. Configure your Metabase credentials in Claude Desktop's extension settings:
-   - **Metabase URL** (required)
-   - **Authentication**: Choose either API key OR email/password
-   - **Export Directory**: Customize where files are saved (defaults to Downloads/Metabase)
-   - **Optional**: Log level, cache TTL, and request timeout settings
-
-##### Benefits of MCP Bundle Installation
-
-- **Single-click installation**: No manual configuration files or command-line setup
-- **Automatic updates**: Claude Desktop manages bundle updates
-- **User-friendly settings**: Configure through Claude Desktop's UI
-- **Seamless integration**: Tools automatically available in your conversations
-
-#### Option 2: Manual Installation
-Follow the standard MCP server installation process detailed in the Local Development Setup section below.
+A high-performance Model Context Protocol server for AI integration with Metabase analytics platforms. Features response optimization, robust error handling, and comprehensive data access tools.
 
 ## Key Features
 
-- **High Performance**: Up to 90% token reduction through response optimization
+- **Response Optimization**: Up to 90% token reduction for efficient AI context usage
+- **Robust Error Handling**: Comprehensive error handling with structured, actionable responses
+- **Smart Caching**: Multi-layer caching with configurable TTL for improved performance
 - **Unified Commands**: `list`, `retrieve`, `search`, `execute`, and `export` tools
-- **Smart Caching**: Multi-layer caching with configurable TTL
 - **Dual Authentication**: API key or email/password authentication
 - **Large Data Export**: Export up to 1M rows in CSV, JSON, and XLSX formats
-- **Configurable Export Directory**: Customize where files are saved
+- **Read-Only Mode**: Enabled by default to restrict execute to SELECT queries only
+
+## Installation
+
+### Option 1: Claude Desktop
+
+Install directly from the [Claude Desktop Directory](https://claude.ai/directory/ant.dir.gh.jerichosequitin.metabase), or:
+
+1. Download `metabase-mcp.mcpb` from [Releases](https://github.com/jerichosequitin/metabase-mcp/releases)
+2. Open the `.mcpb` file with Claude Desktop to install
+3. Configure your Metabase credentials in Claude Desktop's extension settings
+
+### Option 2: Manual Configuration
+
+Add the following to your MCP client configuration:
+
+```jsonc
+{
+  "mcpServers": {
+    "metabase-mcp": {
+      "command": "npx",
+      "args": ["-y", "@jerichosequitin/metabase-mcp"],
+      "env": {
+        // Required
+        "METABASE_URL": "https://your-metabase-instance.com",
+
+        // Authentication (choose one)
+        "METABASE_API_KEY": "your_api_key_here",       // API key (recommended)
+        "METABASE_USER_EMAIL": "",                     // OR email/password
+        "METABASE_PASSWORD": "",
+
+        // Optional (defaults shown)
+        "EXPORT_DIRECTORY": "~/Downloads/Metabase",    // Export location
+        "METABASE_READ_ONLY_MODE": "true",             // Restrict to SELECT queries
+        "LOG_LEVEL": "info",                           // debug, info, warn, error, fatal
+        "CACHE_TTL_MS": "600000",                      // 10 minutes
+        "REQUEST_TIMEOUT_MS": "600000"                 // 10 minutes
+      }
+    }
+  }
+}
+```
+
+### Option 3: Docker
+
+For containerized deployments without installing Node.js. Add to your MCP client configuration:
+
+```jsonc
+{
+  "mcpServers": {
+    "metabase-mcp": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm", "--init",
+        "-e", "METABASE_URL=https://your-metabase-instance.com",
+        "-e", "METABASE_API_KEY=your_api_key",
+        // Optional: mount volume for exports
+        // "-v", "~/Downloads/Metabase:/home/node/exports",
+        "ghcr.io/jerichosequitin/metabase-mcp:latest"
+      ]
+    }
+  }
+}
+```
+
+Or build locally: `docker build -t metabase-mcp .` and use `metabase-mcp` as the image name.
+
+**Required flags:** `-i` (interactive, for MCP stdio), `--rm` (cleanup), `--init` (signal handling)
+
+**Environment variables:** Pass via `-e` flags. See [Manual Configuration](#option-2-manual-configuration) for all options. Docker defaults: `LOG_LEVEL=info`, `METABASE_READ_ONLY_MODE=true`, `EXPORT_DIRECTORY=/home/node/exports`.
 
 ## Available Tools
 
-The server exposes the following optimized tools for AI assistants:
+### `list`
+Fetch all records for a resource type with optimized responses returning only essential fields.
+- **Models**: `cards`, `dashboards`, `tables`, `databases`, `collections`
+- **Pagination**: `offset`/`limit` parameters for large datasets
 
-### Unified Core Tools
-- **`list`**: Fetch ALL records for a single resource type with highly optimized responses
-  - Supports: `cards`, `dashboards`, `tables`, `databases`, `collections`
-  - Returns only essential identifier fields for efficient browsing
-  - **Pagination support** for large datasets exceeding token limits (offset/limit parameters)
-  - Intelligent caching with performance metrics
+### `retrieve`
+Get detailed information for specific items by ID with concurrent processing.
+- **Models**: `card`, `dashboard`, `table`, `database`, `collection`, `field`
+- **Batch Support**: Up to 50 IDs per request
+- **Pagination**: `table_offset`/`table_limit` for databases with many tables
 
-- **`retrieve`**: Get detailed information for specific items by ID
-  - Supports: `card`, `dashboard`, `table`, `database`, `collection`, `field`
-  - Concurrent processing with controlled batch sizes
-  - Aggressive response optimization (75-90% token reduction)*
-  - **Table pagination** for large databases exceeding 25k token limits
+### `search`
+Search across all Metabase items using the native search API.
+- **Filtering**: By model type, database ID, or content
+- **Options**: Search native SQL queries, include dashboard questions
 
-- **`search`**: Unified search across all Metabase items using native search API
-  - Supports all model types with advanced filtering
-  - Search by name, ID, content, or database
-  - Includes dashboard questions and native query search
+### `execute`
+Execute SQL queries or run saved cards with configurable row limits (default: 100, max: 500).
+- **SQL Mode**: Custom queries with `database_id` and `query`
+- **Card Mode**: Saved cards with `card_id` and optional `card_parameters` for filtering
+- **Security**: Respects Read-Only Mode (blocks INSERT, UPDATE, DELETE, DROP, etc.)
 
-### Query Execution Tools
-- **`execute`**: Unified command for executing SQL queries or saved cards (2K row limit)
-  - **SQL Mode**: Execute custom SQL queries with database_id and query parameters
-  - **Card Mode**: Execute saved Metabase cards with card_id parameter and optional filtering
-  - **Card Parameters**: Filter card results using `card_parameters` array with name/value pairs
-  - Enhanced with proper LIMIT clause handling and parameter validation
-  - Intelligent mode detection with strict parameter validation
-  - **Security Warning**: SQL mode can execute ANY valid SQL including destructive operations (DELETE, UPDATE, DROP, TRUNCATE, ALTER). Ensure appropriate database permissions are configured in Metabase. Note: When Read-Only Mode is enabled (default), write operations will be rejected with an error.
+### `export`
+Export large datasets up to 1M rows to the configured export directory.
+- **Formats**: CSV, JSON, XLSX
+- **SQL Mode**: Export custom query results
+- **Card Mode**: Export saved card results with optional filtering
 
-- **`export`**: Unified command for exporting large datasets (up to 1M rows)
-  - **SQL Mode**: Export custom SQL query results with database_id and query parameters
-  - **Card Mode**: Export saved Metabase card results with card_id parameter and optional filtering
-  - **Card Parameters**: Filter card results before export using `card_parameters` array
-  - Supports CSV, JSON, and XLSX formats with case-insensitive format handling
-  - Automatic file saving to configurable directory (defaults to ~/Downloads/Metabase/)
+### `clear_cache`
+Clear internal cache with granular control.
+- **Targets**: Individual model caches, list caches, or bulk operations (`all`, `all-lists`, `all-individual`)
 
-### Utility Tools
-- **`clear_cache`**: Clear internal cache with granular control
-  - Supports model-specific cache clearing for both individual items and lists
-  - Individual item caches: `cards`, `dashboards`, `tables`, `databases`, `collections`, `fields`
-  - List caches: `cards-list`, `dashboards-list`, `tables-list`, `databases-list`, `collections-list`
-  - Bulk operations: `all`, `all-individual`, `all-lists`
-
-## Quick Start Examples
-
-```javascript
-// List all cards
-list({ model: "cards" })
-
-// Get detailed card information
-retrieve({ model: "card", ids: [1, 2, 3] })
-
-// Search for dashboards
-search({ query: "sales", models: ["dashboard"] })
-
-// Execute SQL query
-execute({
-  database_id: 1,
-  query: "SELECT * FROM users LIMIT 100"
-})
-
-// Export large dataset
-export({
-  database_id: 1,
-  query: "SELECT * FROM large_table",
-  format: "csv"
-})
-```
-
-## Configuration
-
-### Authentication Options
-
-**API Key (Recommended):**
-```bash
-METABASE_URL=https://your-metabase-instance.com
-METABASE_API_KEY=your_api_key
-```
-
-**Email/Password:**
-```bash
-METABASE_URL=https://your-metabase-instance.com
-METABASE_USER_EMAIL=your_email@example.com
-METABASE_PASSWORD=your_password
-```
-
-**Optional Settings:**
-```bash
-EXPORT_DIRECTORY=~/Downloads/Metabase  # Or ${DOWNLOADS}/Metabase
-LOG_LEVEL=info
-METABASE_READ_ONLY_MODE=true  # Restricts execute to SELECT-only queries (default: true)
-```
-
-## Manual Installation (Developers)
+## For Developers
 
 ### Prerequisites
 - Node.js 18.0.0 or higher
@@ -145,110 +130,27 @@ METABASE_READ_ONLY_MODE=true  # Restricts execute to SELECT-only queries (defaul
 ### Setup
 
 ```bash
-# Clone and build
 git clone https://github.com/jerichosequitin/metabase-mcp.git
 cd metabase-mcp
 npm install
 npm run build
 ```
 
-### Environment Configuration
+Then configure your MCP client to use the local build:
 
-Create a `.env` file:
-
-```bash
-# Required
-METABASE_URL=https://your-metabase-instance.com
-
-# Choose authentication method
-METABASE_API_KEY=your_api_key  # Recommended
-# OR
-# METABASE_USER_EMAIL=your_email@example.com
-# METABASE_PASSWORD=your_password
-
-# Optional
-EXPORT_DIRECTORY=~/Downloads/Metabase  # Or ${DOWNLOADS}/Metabase
-LOG_LEVEL=info
-CACHE_TTL_MS=600000 # 10 minutes by default
-REQUEST_TIMEOUT_MS=600000 # 10 minutes by default
-METABASE_READ_ONLY_MODE=true # Restricts execute to SELECT-only queries (default: true)
-```
-
-### Claude Desktop Integration
-
-To integrate with Claude Desktop, you'll need to configure the MCP server in Claude's configuration file.
-
-#### Configuration File Locations:
-- **MacOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
-
-#### For Local Development:
-```json
+```jsonc
 {
   "mcpServers": {
     "metabase-mcp": {
-      "command": "/Users/your-username/path/to/metabase-mcp/build/src/index.js",
-      "env": {
-        "METABASE_URL": "https://your-metabase-instance.com",
-        "METABASE_API_KEY": "your_api_key_here",
-        "LOG_LEVEL": "info",
-        "CACHE_TTL_MS": "600000",
-        "EXPORT_DIRECTORY": "/path/to/your/export/directory"
-      }
+      "command": "node",
+      "args": ["/path/to/metabase-mcp/build/src/index.js"],
+      "env": { /* see Manual Configuration for options */ }
     }
   }
 }
 ```
 
-#### Important Notes:
-- **Use absolute paths** for local development (e.g., `/Users/username/Documents/metabase-mcp/build/src/index.js`)
-- **Replace `your-username`** with your actual username
-- **Replace `path/to/metabase-mcp`** with the actual path to your cloned repository
-- **No need to run the server manually** - Claude Desktop will automatically invoke and manage the MCP server via STDIO
-- **Never commit real credentials** to version control
-- **Restart Claude Desktop** after making configuration changes
-
-#### Troubleshooting:
-- Ensure the path to `build/src/index.js` is correct and the file exists
-- Verify your Metabase credentials are valid
-- Check Claude Desktop's logs for any connection errors
-- Make sure the server builds successfully with `npm run build`
-
-## Advanced Usage
-
-### Card Parameters
-
-For executing saved cards with filters, use the `card_parameters` array:
-
-```javascript
-execute({
-  card_id: 42,
-  card_parameters: [
-    {
-      "id": "param-uuid",
-      "slug": "start_date",
-      "target": ["dimension", ["template-tag", "start_date"]],
-      "type": "date/all-options",
-      "value": "2024-01-01~2024-12-31"
-    }
-  ]
-})
-```
-
-*Get parameter structure by retrieving card details first.*
-
-### Pagination
-
-```javascript
-// List with pagination
-list({ model: "cards", limit: 100, offset: 0 })
-
-// Large database tables
-retrieve({ model: "database", ids: [1], table_limit: 20 })
-```
-
-
-## Debugging
+### Debugging
 
 Use the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) for development:
 
@@ -256,64 +158,26 @@ Use the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) for d
 npm run inspector
 ```
 
-## Docker Support
-
-```bash
-# Build and test
-docker build -t metabase-mcp .
-docker run -e METABASE_URL=https://metabase.example.com \
-           -e METABASE_API_KEY=your_api_key \
-           metabase-mcp
-```
-
-*Note: Docker is primarily for development/testing.*
-
-## Development
-
 ### Testing
 
 ```bash
-# Run tests
-npm test
-
-# Coverage report
-npm run test:coverage
-
-# Development tools
-npm run inspector  # MCP Inspector for debugging
+npm test                 # Run tests
+npm run test:coverage    # Coverage report
 ```
 
 ### Building MCPB Package
 
 ```bash
-# Build for distribution
 npm run mcpb:build
 ```
 
-Creates `metabase-mcp-{version}.mcpb` (e.g., `metabase-mcp-1.1.0.mcpb`) ready for GitHub Releases.
+Creates `metabase-mcp-{version}.mcpb` ready for GitHub Releases.
 
-## Security Considerations
+## Security
 
-- **API Key Authentication**: Recommended for production environments
-- **Credential Security**: Environment variable-based configuration
-- **Docker Secrets**: Support for Docker secrets and environment variables
-- **Network Security**: Apply appropriate network security measures
-- **Rate Limiting**: Built-in request rate limiting and timeout handling
+**Read-Only Mode** is enabled by default (`METABASE_READ_ONLY_MODE=true`), restricting the `execute` tool to SELECT queries only. Write operations (INSERT, UPDATE, DELETE, DROP, etc.) are blocked. Set to `false` to allow write operations.
 
-### Read-Only Mode
-
-Read-only mode is **enabled by default** to restrict the `execute` tool to SELECT queries only. To disable:
-
-```bash
-METABASE_READ_ONLY_MODE=false
-```
-
-When enabled:
-- Only SELECT queries are permitted through the `execute` tool
-- Write operations (INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, TRUNCATE, etc.) are rejected with an error
-- Stored procedure calls (CALL, EXEC) and permission changes (GRANT, REVOKE) are also blocked
-
-This default is recommended for production environments where AI assistants should only read data, not modify it.
+**Authentication**: API key authentication is recommended over email/password for production use.
 
 ## License
 

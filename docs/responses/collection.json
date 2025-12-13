@@ -1,85 +1,34 @@
 {
-  "model": "collection",
-  "token_analysis": {
-    "estimated_raw_size": "2,000-3,000 characters",
-    "estimated_optimized_size": "1,800-2,500 characters",
-    "estimated_savings": "~10-20% reduction",
-    "optimization_priority": "low"
-  },
-  "essential_fields": [
-    "id",
-    "name",
-    "description",
-    "archived",
-    "slug",
-    "can_write",
-    "authority_level",
-    "personal_owner_id",
-    "type",
-    "effective_ancestors",
-    "can_restore",
-    "is_sample",
-    "effective_location",
-    "parent_id",
-    "location",
-    "namespace",
-    "is_personal",
-    "created_at",
-    "can_delete"
+  "id": "number",
+  "authority_level": "string|null",
+  "description": "string|null",
+  "archived": "boolean",
+  "slug": "string",
+  "archive_operation_id": "string|null",
+  "can_write": "boolean",
+  "name": "string",
+  "personal_owner_id": "number|null",
+  "type": "string|null",
+  "effective_ancestors": [
+    {
+      "metabase.collections.models.collection.root/is-root?": "boolean",
+      "authority_level": "string|null",
+      "name": "string",
+      "is_personal": "boolean",
+      "id": "string|number",
+      "can_write": "boolean"
+    }
   ],
-  "removable_fields": [
-    "archive_operation_id",
-    "archived_directly",
-    "entity_id"
-  ],
-  "optimization_notes": [
-    "Collection responses are relatively small and don't require heavy optimization",
-    "Essential for operations: organizational structure, permissions, hierarchy",
-    "Effective ancestors provide collection hierarchy context",
-    "Personal collection flags important for permission handling",
-    "Archive and entity metadata fields can be removed for token savings"
-  ],
-  "raw_response_structure": {
-    "id": "number",
-    "authority_level": "string|null",
-    "description": "string|null",
-    "archived": "boolean",
-    "slug": "string",
-    "archive_operation_id": "string|null",
-    "can_write": "boolean",
-    "name": "string",
-    "personal_owner_id": "number|null",
-    "type": "string|null",
-    "effective_ancestors": [
-      {
-        "metabase.collections.models.collection.root/is-root?": "boolean",
-        "authority_level": "string|null",
-        "name": "string",
-        "is_personal": "boolean",
-        "id": "string|number",
-        "can_write": "boolean"
-      }
-    ],
-    "can_restore": "boolean",
-    "is_sample": "boolean",
-    "effective_location": "string",
-    "parent_id": "number|null",
-    "archived_directly": "boolean|null",
-    "entity_id": "string|null",
-    "location": "string",
-    "namespace": "string|null",
-    "is_personal": "boolean",
-    "created_at": "string (ISO date)",
-    "can_delete": "boolean",
-    "retrieved_at": "string (ISO date)"
-  },
-  "flattened_fields": [
-    "id", "authority_level", "description", "archived", "slug", "archive_operation_id",
-    "can_write", "name", "personal_owner_id", "type", "effective_ancestors[]",
-    "effective_ancestors[].metabase.collections.models.collection.root/is-root?",
-    "effective_ancestors[].authority_level", "effective_ancestors[].name",
-    "effective_ancestors[].is_personal", "effective_ancestors[].id", "effective_ancestors[].can_write",
-    "can_restore", "is_sample", "effective_location", "parent_id", "archived_directly",
-    "entity_id", "location", "namespace", "is_personal", "created_at", "can_delete", "retrieved_at"
-  ]
+  "can_restore": "boolean",
+  "is_sample": "boolean",
+  "effective_location": "string",
+  "parent_id": "number|null",
+  "archived_directly": "boolean|null",
+  "entity_id": "string|null",
+  "location": "string",
+  "namespace": "string|null",
+  "is_personal": "boolean",
+  "created_at": "string (ISO date)",
+  "can_delete": "boolean",
+  "retrieved_at": "string (ISO date)"
 }

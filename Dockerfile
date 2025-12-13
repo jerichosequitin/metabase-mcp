@@ -4,8 +4,8 @@
 FROM node:lts-alpine
 
 LABEL maintainer="Jericho Sequitin <https://github.com/jerichosequitin>"
-LABEL description="Model Context Protocol server for Metabase"
-LABEL version="1.0.0"
+LABEL description="High-performance MCP server for Metabase with response optimization and robust error handling"
+LABEL version="1.1.3"
 
 # Set working directory
 WORKDIR /usr/src/app
@@ -13,14 +13,8 @@ WORKDIR /usr/src/app
 # Copy package files first to leverage Docker layer caching
 COPY package*.json ./
 
-# Configure npm to skip prepare scripts during install
-RUN npm config set ignore-scripts true
-
 # Install all dependencies including devDependencies for build
-RUN npm ci
-
-# Restore the ignore-scripts setting
-RUN npm config set ignore-scripts false
+RUN npm ci --ignore-scripts
 
 # Copy application code
 COPY . .
@@ -28,28 +22,26 @@ COPY . .
 # Run comprehensive tests during build
 RUN npm run test:coverage
 
-# Build the TypeScript project (without running tests again)
-RUN npm run build:fast
+# Build the TypeScript project and clean up dev dependencies
+RUN npm run build:fast && \
+    chmod +x build/src/index.js && \
+    npm ci --omit=dev --ignore-scripts && \
+    npm cache clean --force
 
-# Set appropriate permissions for the executable
-RUN chmod +x build/src/index.js
-
-# Clean up dev dependencies to reduce image size
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+# Create export directory with proper permissions
+RUN mkdir -p /home/node/exports && chown node:node /home/node/exports
 
 # Default environment variables
 ENV NODE_ENV=production \
-    LOG_LEVEL=info
-
-# Authentication setup (configure via Docker run -e flags)
-# Option 1: Username and password authentication
-# docker run -e METABASE_URL=https://metabase.example.com -e METABASE_USER_EMAIL=user@example.com -e METABASE_PASSWORD=pass metabase-mcp
-
-# Option 2: API Key authentication (recommended for production)
-# docker run -e METABASE_URL=https://metabase.example.com -e METABASE_API_KEY=your_api_key metabase-mcp
+    LOG_LEVEL=info \
+    EXPORT_DIRECTORY=/home/node/exports \
+    METABASE_READ_ONLY_MODE=true
 
 # Use non-root user for better security
 USER node
+
+# Volume for accessing exported files from host
+VOLUME /home/node/exports
 
 # Run the server
 CMD ["node", "build/src/index.js"]

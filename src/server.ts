@@ -1,5 +1,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+
+const VERSION = '1.1.3';
 import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
@@ -36,7 +38,7 @@ export class MetabaseServer {
     this.server = new Server(
       {
         name: 'metabase-mcp',
-        version: '1.1.2',
+        version: VERSION,
       },
       {
         capabilities: {
@@ -98,7 +100,7 @@ export class MetabaseServer {
       } else {
         console.error(`[${timestamp}] ${logPrefix}: ${message}`);
       }
-    } catch (e) {
+    } catch (_e) {
       // Ignore if console is not available
     }
   }

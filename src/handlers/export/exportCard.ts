@@ -77,7 +77,7 @@ function extractPreviewData(responseData: any, format: string): any[] {
     }
 
     return [];
-  } catch (error) {
+  } catch (_error) {
     // If preview extraction fails, return empty array
     return [];
   }

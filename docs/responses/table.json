@@ -1,216 +1,130 @@
 {
-  "model_type": "table",
-  "description": "Complete table response structure with field metadata",
-  "token_analysis": {
-    "estimated_raw_size": "~35,000-40,000 characters",
-    "major_token_consumers": [
-      "fields[] array with 28 field objects",
-      "Each field contains fingerprint data with statistics",
-      "dimension_options object with 39 temporal/binning options",
-      "db object with full database metadata",
-      "Multiple arrays: dimensions, dimension_options, segments, metrics"
-    ],
-    "optimization_opportunities": [
-      "Remove detailed fingerprint statistics (min, max, q1, q3, sd, avg)",
-      "Remove dimension_options object (39 entries)",
-      "Simplify db object to essential fields only",
-      "Remove db.features array (large feature list)",
-      "Remove internal metadata fields",
-      "Keep only essential field metadata for schema understanding"
-    ],
-    "estimated_savings": "~80% reduction (40,000 to ~8,000 characters)"
-  },
-  "essential_fields": [
-    "id", "name", "description", "schema", "view_count", "db_id", "display_name",
-    "entity_type", "active", "created_at", "updated_at", "field_order", "is_upload",
-    "initial_sync_status", "estimated_row_count"
-  ],
-  "essential_db_fields": [
-    "id", "name", "description", "engine", "timezone", "dbms_version",
-    "is_sample", "is_on_demand", "uploads_enabled", "auto_run_queries"
-  ],
-  "essential_field_fields": [
-    "id", "name", "display_name", "description", "database_type", "base_type", "effective_type",
-    "semantic_type", "table_id", "position", "database_position", "active", "database_indexed",
-    "database_required", "has_field_values", "visibility_type", "preview_display",
-    "fk_target_field_id", "created_at", "updated_at"
-  ],
-  "removable_fields": [
-    "dimension_options (39 entries)", "segments", "metrics", "caveats", "points_of_interest",
-    "fields[].fingerprint (detailed statistics)", "fields[].dimensions", "fields[].dimension_options",
-    "fields[].coercion_strategy", "fields[].fingerprint_version", "fields[].settings",
-    "fields[].nfc_path", "fields[].parent_id", "fields[].last_analyzed", "fields[].database_partitioned",
-    "fields[].database_is_auto_increment", "fields[].json_unfolding", "fields[].custom_position",
-    "fields[].default_dimension_option", "fields[].target", "fields[].name_field",
-    "fields[].points_of_interest", "db.features (large array)", "db.uploads_schema_name",
-    "db.uploads_table_prefix", "db.cache_field_values_schedule", "db.metadata_sync_schedule",
-    "db.settings", "db.caveats", "db.creator_id", "db.is_full_sync", "db.cache_ttl",
-    "db.is_audit", "db.refingerprint", "db.points_of_interest", "db.is_attached_dwh"
-  ],
-  "optimization_notes": [
-    "Table responses contain extensive field metadata with fingerprint statistics",
-    "Each field has detailed statistical analysis (min, max, quartiles, standard deviation)",
-    "Dimension options provide 39 different temporal/binning transformations",
-    "Database features array contains 40+ feature strings consuming significant tokens",
-    "Essential for schema understanding: field names, types, relationships, constraints",
-    "Analytics data (view_count) preserved for future use",
-    "Field positioning and display information important for UI operations"
-  ],
-  "raw_response_structure": {
-    "id": "number",
-    "description": "string|null",
-    "entity_type": "string",
-    "view_count": "number",
-    "schema": "string",
-    "database_require_filter": "null",
-    "show_in_getting_started": "boolean",
-    "name": "string",
-    "fields": [
-      {
-        "description": "string|null",
-        "database_type": "string",
-        "semantic_type": "string|null",
-        "table_id": "number",
-        "coercion_strategy": "null",
-        "database_indexed": "boolean",
-        "name": "string",
-        "fingerprint_version": "number",
-        "has_field_values": "string",
-        "settings": "null",
-        "caveats": "null",
-        "fk_target_field_id": "number|null",
-        "dimensions": "array",
-        "dimension_options": "array",
-        "updated_at": "string (ISO date)",
-        "custom_position": "number",
-        "effective_type": "string",
-        "active": "boolean",
-        "nfc_path": "null",
-        "parent_id": "null",
-        "id": "number",
-        "last_analyzed": "string (ISO date)|null",
-        "database_partitioned": "null",
-        "database_is_auto_increment": "boolean",
-        "json_unfolding": "boolean",
-        "position": "number",
-        "visibility_type": "string",
-        "default_dimension_option": "string|null",
-        "target": "null",
-        "preview_display": "boolean",
-        "display_name": "string",
-        "database_position": "number",
-        "database_required": "boolean",
-        "name_field": "null",
-        "fingerprint": {
-          "global": {
-            "distinct-count": "number",
-            "nil%": "number"
-          },
-          "type": {
-            "type/Number": {
-              "min": "number",
-              "q1": "number",
-              "q3": "number",
-              "max": "number",
-              "sd": "number",
-              "avg": "number"
-            },
-            "type/Text": {
-              "percent-json": "number",
-              "percent-url": "number",
-              "percent-email": "number",
-              "average-length": "number"
-            },
-            "type/DateTime": {
-              "earliest": "string (ISO date)",
-              "latest": "string (ISO date)"
-            }
-          }
-        },
-        "created_at": "string (ISO date)",
-        "base_type": "string",
-        "points_of_interest": "null"
-      }
-    ],
-    "caveats": "null",
-    "segments": "array",
-    "dimension_options": {
-      "0": "object (Day)",
-      "1": "object (Week)",
-      "...": "object (39 dimension options total)"
-    },
-    "updated_at": "string (ISO date)",
-    "active": "boolean",
-    "db_id": "number",
-    "visibility_type": "string|null",
-    "field_order": "string",
-    "is_upload": "boolean",
-    "initial_sync_status": "string",
-    "display_name": "string",
-    "metrics": "array",
-    "created_at": "string (ISO date)",
-    "estimated_row_count": "number|null",
-    "points_of_interest": "null",
-    "db": {
-      "uploads_schema_name": "null",
+  "id": "number",
+  "description": "string|null",
+  "entity_type": "string",
+  "view_count": "number",
+  "schema": "string",
+  "database_require_filter": "null",
+  "show_in_getting_started": "boolean",
+  "name": "string",
+  "fields": [
+    {
       "description": "string|null",
-      "features": ["array of 40+ feature strings"],
-      "uploads_table_prefix": "null",
-      "cache_field_values_schedule": "string|null",
-      "timezone": "string",
-      "is_attached_dwh": "boolean",
-      "auto_run_queries": "boolean",
-      "metadata_sync_schedule": "string",
+      "database_type": "string",
+      "semantic_type": "string|null",
+      "table_id": "number",
+      "coercion_strategy": "null",
+      "database_indexed": "boolean",
       "name": "string",
+      "fingerprint_version": "number",
+      "has_field_values": "string",
       "settings": "null",
       "caveats": "null",
-      "creator_id": "null",
-      "is_full_sync": "boolean",
+      "fk_target_field_id": "number|null",
+      "dimensions": "array",
+      "dimension_options": "array",
       "updated_at": "string (ISO date)",
-      "cache_ttl": "null",
-      "is_sample": "boolean",
+      "custom_position": "number",
+      "effective_type": "string",
+      "active": "boolean",
+      "nfc_path": "null",
+      "parent_id": "null",
       "id": "number",
-      "is_on_demand": "boolean",
-      "engine": "string",
-      "initial_sync_status": "string",
-      "is_audit": "boolean",
-      "dbms_version": {
-        "flavor": "string",
-        "version": "string",
-        "semantic-version": "array"
+      "last_analyzed": "string (ISO date)|null",
+      "database_partitioned": "null",
+      "database_is_auto_increment": "boolean",
+      "json_unfolding": "boolean",
+      "position": "number",
+      "visibility_type": "string",
+      "default_dimension_option": "string|null",
+      "target": "null",
+      "preview_display": "boolean",
+      "display_name": "string",
+      "database_position": "number",
+      "database_required": "boolean",
+      "name_field": "null",
+      "fingerprint": {
+        "global": {
+          "distinct-count": "number",
+          "nil%": "number"
+        },
+        "type": {
+          "type/Number": {
+            "min": "number",
+            "q1": "number",
+            "q3": "number",
+            "max": "number",
+            "sd": "number",
+            "avg": "number"
+          },
+          "type/Text": {
+            "percent-json": "number",
+            "percent-url": "number",
+            "percent-email": "number",
+            "average-length": "number"
+          },
+          "type/DateTime": {
+            "earliest": "string (ISO date)",
+            "latest": "string (ISO date)"
+          }
+        }
       },
-      "uploads_enabled": "boolean",
-      "refingerprint": "null",
       "created_at": "string (ISO date)",
+      "base_type": "string",
       "points_of_interest": "null"
-    },
-    "retrieved_at": "string (ISO date)"
+    }
+  ],
+  "caveats": "null",
+  "segments": "array",
+  "dimension_options": {
+    "0": "object (Day)",
+    "1": "object (Week)",
+    "...": "object (39 dimension options total)"
   },
-  "flattened_fields": [
-    "id", "description", "entity_type", "view_count", "schema", "database_require_filter",
-    "show_in_getting_started", "name", "caveats", "segments", "dimension_options", "updated_at",
-    "active", "db_id", "visibility_type", "field_order", "is_upload", "initial_sync_status",
-    "display_name", "metrics", "created_at", "estimated_row_count", "points_of_interest",
-    "fields[].description", "fields[].database_type", "fields[].semantic_type", "fields[].table_id",
-    "fields[].coercion_strategy", "fields[].database_indexed", "fields[].name", "fields[].fingerprint_version",
-    "fields[].has_field_values", "fields[].settings", "fields[].caveats", "fields[].fk_target_field_id",
-    "fields[].dimensions", "fields[].dimension_options", "fields[].updated_at", "fields[].custom_position",
-    "fields[].effective_type", "fields[].active", "fields[].nfc_path", "fields[].parent_id", "fields[].id",
-    "fields[].last_analyzed", "fields[].database_partitioned", "fields[].database_is_auto_increment",
-    "fields[].json_unfolding", "fields[].position", "fields[].visibility_type", "fields[].default_dimension_option",
-    "fields[].target", "fields[].preview_display", "fields[].display_name", "fields[].database_position",
-    "fields[].database_required", "fields[].name_field", "fields[].fingerprint.global.distinct-count",
-    "fields[].fingerprint.global.nil%", "fields[].fingerprint.type.type/Number.min", "fields[].fingerprint.type.type/Number.q1",
-    "fields[].fingerprint.type.type/Number.q3", "fields[].fingerprint.type.type/Number.max", "fields[].fingerprint.type.type/Number.sd",
-    "fields[].fingerprint.type.type/Number.avg", "fields[].fingerprint.type.type/Text.percent-json",
-    "fields[].fingerprint.type.type/Text.percent-url", "fields[].fingerprint.type.type/Text.percent-email",
-    "fields[].fingerprint.type.type/Text.average-length", "fields[].fingerprint.type.type/DateTime.earliest",
-    "fields[].fingerprint.type.type/DateTime.latest", "fields[].created_at", "fields[].base_type", "fields[].points_of_interest",
-    "db.uploads_schema_name", "db.description", "db.features[]", "db.uploads_table_prefix", "db.cache_field_values_schedule",
-    "db.timezone", "db.is_attached_dwh", "db.auto_run_queries", "db.metadata_sync_schedule", "db.name", "db.settings",
-    "db.caveats", "db.creator_id", "db.is_full_sync", "db.updated_at", "db.cache_ttl", "db.is_sample", "db.id",
-    "db.is_on_demand", "db.engine", "db.initial_sync_status", "db.is_audit", "db.dbms_version.flavor",
-    "db.dbms_version.version", "db.dbms_version.semantic-version", "db.uploads_enabled", "db.refingerprint",
-    "db.created_at", "db.points_of_interest", "retrieved_at"
-  ]
+  "updated_at": "string (ISO date)",
+  "active": "boolean",
+  "db_id": "number",
+  "visibility_type": "string|null",
+  "field_order": "string",
+  "is_upload": "boolean",
+  "initial_sync_status": "string",
+  "display_name": "string",
+  "metrics": "array",
+  "created_at": "string (ISO date)",
+  "estimated_row_count": "number|null",
+  "points_of_interest": "null",
+  "db": {
+    "uploads_schema_name": "null",
+    "description": "string|null",
+    "features": ["array of 40+ feature strings"],
+    "uploads_table_prefix": "null",
+    "cache_field_values_schedule": "string|null",
+    "timezone": "string",
+    "is_attached_dwh": "boolean",
+    "auto_run_queries": "boolean",
+    "metadata_sync_schedule": "string",
+    "name": "string",
+    "settings": "null",
+    "caveats": "null",
+    "creator_id": "null",
+    "is_full_sync": "boolean",
+    "updated_at": "string (ISO date)",
+    "cache_ttl": "null",
+    "is_sample": "boolean",
+    "id": "number",
+    "is_on_demand": "boolean",
+    "engine": "string",
+    "initial_sync_status": "string",
+    "is_audit": "boolean",
+    "dbms_version": {
+      "flavor": "string",
+      "version": "string",
+      "semantic-version": "array"
+    },
+    "uploads_enabled": "boolean",
+    "refingerprint": "null",
+    "created_at": "string (ISO date)",
+    "points_of_interest": "null"
+  },
+  "retrieved_at": "string (ISO date)"
 }

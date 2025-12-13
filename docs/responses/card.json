@@ -1,225 +1,141 @@
 {
-  "model_type": "card",
-  "description": "Complete card response structure with query and metadata",
-  "token_analysis": {
-    "estimated_raw_size": "~45,000-50,000 characters",
-    "major_token_consumers": [
-      "result_metadata array with 45+ field objects",
-      "Each field contains fingerprint data with detailed statistics",
-      "visualization_settings with chart configurations",
-      "collection object with full metadata",
-      "creator object with user details",
-      "Multiple metadata arrays and objects"
-    ],
-    "optimization_opportunities": [
-      "Remove result_metadata array (largest consumer)",
-      "Remove visualization_settings (chart configs)",
-      "Simplify collection and creator objects",
-      "Remove internal metadata fields",
-      "Keep only essential fields for execute_query operations"
-    ],
-    "estimated_savings": "~90% reduction (45,000 to ~4,000-5,000 characters)"
-  },
-  "essential_fields": [
-    "id", "name", "description", "database_id", "dataset_query", "collection_id",
-    "query_type", "archived", "can_write", "created_at", "updated_at", "parameters",
-    "view_count", "query_average_duration"
+  "id": "number",
+  "cache_invalidated_at": "string (ISO date)",
+  "description": "string",
+  "archived": "boolean",
+  "view_count": "number",
+  "collection_position": "number|null",
+  "source_card_id": "number|null",
+  "table_id": "number|null",
+  "can_run_adhoc_query": "boolean",
+  "result_metadata": [
+    {
+      "database_type": "string",
+      "semantic_type": "string|null",
+      "name": "string",
+      "field_ref": ["array"],
+      "effective_type": "string",
+      "display_name": "string",
+      "fingerprint": {
+        "global": {
+          "distinct-count": "number",
+          "nil%": "number"
+        },
+        "type": {
+          "type/Number": {
+            "min": "number",
+            "q1": "number",
+            "q3": "number",
+            "max": "number",
+            "sd": "number",
+            "avg": "number"
+          }
+        }
+      },
+      "base_type": "string"
+    }
   ],
-  "essential_dataset_query_fields": [
-    "type", "database", "native.query", "native.template_tags"
-  ],
-  "essential_creator_fields": [
-    "id", "email", "first_name", "last_name"
-  ],
-  "essential_collection_fields": [
-    "id", "name", "location"
-  ],
-  "essential_parameter_fields": [
-    "id", "name", "type", "slug", "target"
-  ],
-  "removable_fields": [
-    "result_metadata (45+ fields with fingerprints)", "visualization_settings",
-    "embedding_params", "enable_embedding", "collection_position", "cache_ttl",
-    "made_public_by_id", "public_uuid", "last-edit-info", "moderation_reviews",
-    "average_query_time", "last_query_start", "dashboardcards", "parameter_mappings"
-  ],
-  "optimization_notes": [
-    "Card responses contain massive result_metadata arrays with field fingerprints",
-    "Essential for execute_query: database_id, dataset_query.native.query, template_tags",
-    "Analytics data (view_count, query_average_duration) preserved for future use",
-    "Visualization settings removed as they're not needed for MCP operations",
-    "Collection and creator info simplified to essential identification fields"
-  ],
-  "raw_response_structure": {
+  "creator": {
+    "email": "string",
+    "first_name": "string",
+    "last_login": "string (ISO date)",
+    "is_qbnewb": "boolean",
+    "is_superuser": "boolean",
     "id": "number",
-    "cache_invalidated_at": "string (ISO date)",
+    "last_name": "string",
+    "tenant_id": "number|null",
+    "date_joined": "string (ISO date)",
+    "common_name": "string"
+  },
+  "initially_published_at": "string|null",
+  "can_write": "boolean",
+  "card_schema": "number",
+  "database_id": "number",
+  "enable_embedding": "boolean",
+  "collection_id": "number",
+  "query_type": "string",
+  "name": "string",
+  "last_query_start": "string (ISO date)",
+  "dashboard_count": "number",
+  "last_used_at": "string (ISO date)",
+  "dashboard": "object|null",
+  "type": "string",
+  "average_query_time": "number",
+  "creator_id": "number",
+  "can_restore": "boolean",
+  "moderation_reviews": "array",
+  "updated_at": "string (ISO date)",
+  "made_public_by_id": "number|null",
+  "embedding_params": "object|null",
+  "cache_ttl": "number|null",
+  "dataset_query": {
+    "database": "number",
+    "type": "string",
+    "native": {
+      "template-tags": {
+        "tag_name": {
+          "id": "string (UUID)",
+          "name": "string",
+          "display-name": "string",
+          "type": "string",
+          "dimension": "array",
+          "widget-type": "string",
+          "default": "any"
+        }
+      },
+      "query": "string (SQL)"
+    }
+  },
+  "parameter_mappings": "array|null",
+  "can_manage_db": "boolean",
+  "display": "string",
+  "archived_directly": "boolean",
+  "entity_id": "string|null",
+  "collection_preview": "boolean",
+  "last-edit-info": {
+    "id": "number",
+    "email": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "timestamp": "string (ISO date)"
+  },
+  "visualization_settings": "object",
+  "collection": {
+    "authority_level": "string|null",
     "description": "string",
     "archived": "boolean",
-    "view_count": "number",
-    "collection_position": "number|null",
-    "source_card_id": "number|null",
-    "table_id": "number|null",
-    "can_run_adhoc_query": "boolean",
-    "result_metadata": [
-      {
-        "database_type": "string",
-        "semantic_type": "string|null",
-        "name": "string",
-        "field_ref": ["array"],
-        "effective_type": "string",
-        "display_name": "string",
-        "fingerprint": {
-          "global": {
-            "distinct-count": "number",
-            "nil%": "number"
-          },
-          "type": {
-            "type/Number": {
-              "min": "number",
-              "q1": "number",
-              "q3": "number",
-              "max": "number",
-              "sd": "number",
-              "avg": "number"
-            }
-          }
-        },
-        "base_type": "string"
-      }
-    ],
-    "creator": {
-      "email": "string",
-      "first_name": "string",
-      "last_login": "string (ISO date)",
-      "is_qbnewb": "boolean",
-      "is_superuser": "boolean",
-      "id": "number",
-      "last_name": "string",
-      "tenant_id": "number|null",
-      "date_joined": "string (ISO date)",
-      "common_name": "string"
-    },
-    "initially_published_at": "string|null",
-    "can_write": "boolean",
-    "card_schema": "number",
-    "database_id": "number",
-    "enable_embedding": "boolean",
-    "collection_id": "number",
-    "query_type": "string",
+    "slug": "string",
+    "archive_operation_id": "string|null",
     "name": "string",
-    "last_query_start": "string (ISO date)",
-    "dashboard_count": "number",
-    "last_used_at": "string (ISO date)",
-    "dashboard": "object|null",
-    "type": "string",
-    "average_query_time": "number",
-    "creator_id": "number",
-    "can_restore": "boolean",
-    "moderation_reviews": "array",
-    "updated_at": "string (ISO date)",
-    "made_public_by_id": "number|null",
-    "embedding_params": "object|null",
-    "cache_ttl": "number|null",
-    "dataset_query": {
-      "database": "number",
-      "type": "string",
-      "native": {
-        "template-tags": {
-          "tag_name": {
-            "id": "string (UUID)",
-            "name": "string",
-            "display-name": "string",
-            "type": "string",
-            "dimension": "array",
-            "widget-type": "string",
-            "default": "any"
-          }
-        },
-        "query": "string (SQL)"
-      }
-    },
-    "parameter_mappings": "array|null",
-    "can_manage_db": "boolean",
-    "display": "string",
-    "archived_directly": "boolean",
+    "personal_owner_id": "number|null",
+    "type": "string|null",
+    "is_sample": "boolean",
+    "id": "number",
+    "archived_directly": "boolean|null",
     "entity_id": "string|null",
-    "collection_preview": "boolean",
-    "last-edit-info": {
-      "id": "number",
-      "email": "string",
-      "first_name": "string",
-      "last_name": "string",
-      "timestamp": "string (ISO date)"
-    },
-    "visualization_settings": "object",
-    "collection": {
-      "authority_level": "string|null",
-      "description": "string",
-      "archived": "boolean",
-      "slug": "string",
-      "archive_operation_id": "string|null",
-      "name": "string",
-      "personal_owner_id": "number|null",
-      "type": "string|null",
-      "is_sample": "boolean",
-      "id": "number",
-      "archived_directly": "boolean|null",
-      "entity_id": "string|null",
-      "location": "string",
-      "namespace": "string|null",
-      "is_personal": "boolean",
-      "created_at": "string (ISO date)"
-    },
-    "metabase_version": "string|null",
-    "parameters": [
-      {
-        "id": "string (UUID)",
-        "type": "string",
-        "target": "array",
-        "name": "string",
-        "slug": "string",
-        "values_query_type": "string",
-        "values_source_type": "string",
-        "values_source_config": "object"
-      }
-    ],
-    "dashboard_id": "number|null",
-    "created_at": "string (ISO date)",
-    "parameter_usage_count": "number",
-    "public_uuid": "string|null",
-    "can_delete": "boolean",
-    "query_average_duration": "number|null",
-    "retrieved_at": "string (ISO date)"
+    "location": "string",
+    "namespace": "string|null",
+    "is_personal": "boolean",
+    "created_at": "string (ISO date)"
   },
-  "flattened_fields": [
-    "id", "cache_invalidated_at", "description", "archived", "view_count", "collection_position",
-    "source_card_id", "table_id", "can_run_adhoc_query", "result_metadata[].database_type",
-    "result_metadata[].semantic_type", "result_metadata[].name", "result_metadata[].field_ref",
-    "result_metadata[].effective_type", "result_metadata[].display_name",
-    "result_metadata[].fingerprint.global.distinct-count", "result_metadata[].fingerprint.global.nil%",
-    "result_metadata[].fingerprint.type.type/Number.min", "result_metadata[].fingerprint.type.type/Number.q1",
-    "result_metadata[].fingerprint.type.type/Number.q3", "result_metadata[].fingerprint.type.type/Number.max",
-    "result_metadata[].fingerprint.type.type/Number.sd", "result_metadata[].fingerprint.type.type/Number.avg",
-    "result_metadata[].base_type", "creator.email", "creator.first_name", "creator.last_login",
-    "creator.is_qbnewb", "creator.is_superuser", "creator.id", "creator.last_name", "creator.tenant_id",
-    "creator.date_joined", "creator.common_name", "initially_published_at", "can_write", "card_schema",
-    "database_id", "enable_embedding", "collection_id", "query_type", "name", "last_query_start",
-    "dashboard_count", "last_used_at", "dashboard", "type", "average_query_time", "creator_id",
-    "can_restore", "moderation_reviews", "updated_at", "made_public_by_id", "embedding_params",
-    "cache_ttl", "dataset_query.database", "dataset_query.type", "dataset_query.native.template-tags.{tag_name}.id",
-    "dataset_query.native.template-tags.{tag_name}.name", "dataset_query.native.template-tags.{tag_name}.display-name",
-    "dataset_query.native.template-tags.{tag_name}.type", "dataset_query.native.template-tags.{tag_name}.dimension",
-    "dataset_query.native.template-tags.{tag_name}.widget-type", "dataset_query.native.template-tags.{tag_name}.default",
-    "dataset_query.native.query", "parameter_mappings", "can_manage_db", "display", "archived_directly",
-    "entity_id", "collection_preview", "last-edit-info.id", "last-edit-info.email", "last-edit-info.first_name",
-    "last-edit-info.last_name", "last-edit-info.timestamp", "visualization_settings", "collection.authority_level",
-    "collection.description", "collection.archived", "collection.slug", "collection.archive_operation_id",
-    "collection.name", "collection.personal_owner_id", "collection.type", "collection.is_sample",
-    "collection.id", "collection.archived_directly", "collection.entity_id", "collection.location",
-    "collection.namespace", "collection.is_personal", "collection.created_at", "metabase_version",
-    "parameters[].id", "parameters[].type", "parameters[].target", "parameters[].name", "parameters[].slug",
-    "parameters[].values_query_type", "parameters[].values_source_type", "parameters[].values_source_config",
-    "dashboard_id", "created_at", "parameter_usage_count", "public_uuid", "can_delete",
-    "query_average_duration", "retrieved_at"
-  ]
+  "metabase_version": "string|null",
+  "parameters": [
+    {
+      "id": "string (UUID)",
+      "type": "string",
+      "target": "array",
+      "name": "string",
+      "slug": "string",
+      "values_query_type": "string",
+      "values_source_type": "string",
+      "values_source_config": "object"
+    }
+  ],
+  "dashboard_id": "number|null",
+  "created_at": "string (ISO date)",
+  "parameter_usage_count": "number",
+  "public_uuid": "string|null",
+  "can_delete": "boolean",
+  "query_average_duration": "number|null",
+  "retrieved_at": "string (ISO date)"
 }

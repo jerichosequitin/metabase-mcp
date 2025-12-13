@@ -63,7 +63,7 @@ export function saveRawStructure(model: string, rawData: any, enableSave: boolea
 
     fs.writeFileSync(filePath, JSON.stringify(referenceDoc, null, 2));
     // Debug: Saved raw structure for analysis
-  } catch (error) {
+  } catch (_error) {
     // Debug: Failed to save raw structure
   }
 }
@@ -188,7 +188,7 @@ export function analyzeXlsxContent(arrayBuffer: ArrayBuffer): {
       rowCount: dataRowCount,
       headerCount,
     };
-  } catch (error) {
+  } catch (_error) {
     // If XLSX parsing fails, fall back to file size heuristic
     // An XLSX with meaningful data is typically larger than just headers
     const hasData = arrayBuffer.byteLength > 2000; // More conservative threshold
