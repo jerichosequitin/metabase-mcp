@@ -25,6 +25,11 @@ const files = [
     pattern: /LABEL version="[\d.]+"/,
     replacement: `LABEL version="${version}"`,
   },
+  {
+    path: 'src/server.ts',
+    pattern: /const VERSION = '[\d.]+'/,
+    replacement: `const VERSION = '${version}'`,
+  },
 ];
 
 console.log(`Syncing version ${version} to files...`);
