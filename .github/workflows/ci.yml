@@ -39,6 +39,7 @@ jobs:
       run: npm test
 
     - name: Run tests with coverage
+      if: matrix.node-version != '18.x'
       run: npm run test:coverage
 
 
