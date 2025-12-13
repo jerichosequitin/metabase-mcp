@@ -28,9 +28,6 @@
         "METABASE_USER_EMAIL": "${user_config.metabase_user_email}",
         "METABASE_PASSWORD": "${user_config.metabase_password}",
         "EXPORT_DIRECTORY": "${user_config.export_directory}",
-        "LOG_LEVEL": "${user_config.log_level}",
-        "CACHE_TTL_MS": "${user_config.cache_ttl_ms}",
-        "REQUEST_TIMEOUT_MS": "${user_config.request_timeout_ms}",
         "METABASE_READ_ONLY_MODE": "${user_config.read_only_mode}"
       }
     }
@@ -118,27 +115,6 @@
       "description": "Directory where exported files will be saved",
       "required": true,
       "default": "${DOWNLOADS}/Metabase"
-    },
-    "log_level": {
-      "type": "string",
-      "title": "Log Level",
-      "description": "Logging level",
-      "required": false,
-      "default": "info"
-    },
-    "cache_ttl_ms": {
-      "type": "number",
-      "title": "Cache TTL (ms)",
-      "description": "Cache time-to-live in milliseconds",
-      "required": false,
-      "default": 600000
-    },
-    "request_timeout_ms": {
-      "type": "number",
-      "title": "Request Timeout (ms)",
-      "description": "Request timeout in milliseconds",
-      "required": false,
-      "default": 600000
     }
   },
   "compatibility": {
