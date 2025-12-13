@@ -1,5 +1,9 @@
+import { createRequire } from 'module';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json');
 import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
@@ -36,7 +40,7 @@ export class MetabaseServer {
     this.server = new Server(
       {
         name: 'metabase-mcp',
-        version: '1.1.2',
+        version: pkg.version,
       },
       {
         capabilities: {

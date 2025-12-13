@@ -1,6 +1,6 @@
 {
   "name": "@jerichosequitin/metabase-mcp",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "A high-performance MCP server for Metabase analytics integration with response optimization and robust error handling",
   "type": "module",
   "author": {
@@ -34,6 +34,7 @@
     "test:coverage": "vitest run --coverage",
     "test:all": "./scripts/test-all.sh",
     "clean": "rm -rf build node_modules/.cache",
+    "version": "node scripts/sync-version.cjs && git add README.md manifest.json Dockerfile",
     "mcpb:build": "npm run build && node scripts/build-mcpb.cjs",
     "mcpb:validate": "echo 'MCPB validation - checking manifest structure' && node -e \"const fs = require('fs'); const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8')); console.log('Manifest valid:', manifest.name, manifest.version);\""
   },
