@@ -55,6 +55,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install MCPB CLI
+        run: npm install -g @anthropic-ai/mcpb
+
       - name: Build MCPB package
         run: npm run mcpb:build
 
@@ -122,7 +125,17 @@ jobs:
         run: npm run build:fast
 
       - name: Publish to npm
-        run: npm publish --access public
+        run: |
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+
+          # Check if version already exists on npm
+          if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version 2>/dev/null; then
+            echo "Version ${PACKAGE_VERSION} already exists on npm, skipping publish"
+          else
+            echo "Publishing ${PACKAGE_NAME}@${PACKAGE_VERSION} to npm"
+            npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
