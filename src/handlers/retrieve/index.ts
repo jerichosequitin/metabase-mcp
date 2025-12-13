@@ -1,11 +1,7 @@
 import { CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 import { MetabaseApiClient, CachedResponse } from '../../api.js';
 import { ErrorCode, McpError } from '../../types/core.js';
-import {
-  ResourceNotFoundErrorFactory,
-  AuthorizationErrorFactory,
-  ValidationErrorFactory,
-} from '../../utils/errorFactory.js';
+import { ValidationErrorFactory } from '../../utils/errorFactory.js';
 import {
   handleApiError,
   saveRawStructure,
@@ -148,9 +144,6 @@ export async function handleRetrieve(
     const errors: Array<{
       id: number;
       error: string;
-      category?: string;
-      retryable?: boolean;
-      httpStatus?: number;
     }> = [];
     let apiHits = 0;
     let cacheHits = 0;
@@ -341,39 +334,21 @@ export async function handleRetrieve(
     };
     const primarySource = cacheHits > apiHits ? 'cache' : apiHits > cacheHits ? 'api' : 'mixed';
 
-    // Handle scenarios where all or most requests failed
+    // Handle scenario where all requests failed
     if (successCount === 0 && errorCount > 0) {
-      // All requests failed - analyze the error types to provide appropriate guidance
-      const notFoundErrors = errors.filter(e => e.category === 'resource_not_found');
-      const authErrors = errors.filter(e => e.category === 'authorization');
-      const otherErrors = errors.filter(
-        e => e.category !== 'resource_not_found' && e.category !== 'authorization'
+      const idsText =
+        numericIds.length === 1 ? `ID ${numericIds[0]}` : `IDs ${numericIds.join(', ')}`;
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to retrieve ${validatedModel}(s) ${idsText}: ${errors[0].error}`
       );
-
-      if (notFoundErrors.length === errorCount) {
-        // All errors were "not found" - this is likely a bad request
-        const idsText =
-          numericIds.length === 1 ? `ID ${numericIds[0]}` : `IDs ${numericIds.join(', ')}`;
-        throw ResourceNotFoundErrorFactory.resource(validatedModel, idsText);
-      } else if (authErrors.length === errorCount) {
-        // All errors were authorization - permission issue
-        throw AuthorizationErrorFactory.insufficientPermissions(validatedModel, 'retrieve');
-      } else if (otherErrors.length > 0) {
-        // Mixed errors or other issues - throw the first other error as it's likely more specific
-        const firstOtherError = otherErrors[0] || errors[0];
-        throw new McpError(
-          ErrorCode.InternalError,
-          `Failed to retrieve ${validatedModel}(s): ${firstOtherError.error}`
-        );
-      }
     }
 
-    // If only some requests failed but most succeeded, continue with partial success response
-    // But if failure rate is high (>50%), log a warning
+    // Log warning if failure rate is high (>50%)
     if (errorCount > 0 && errorCount / numericIds.length > 0.5) {
       logWarn(
         `High failure rate in retrieve operation: ${errorCount}/${numericIds.length} ${validatedModel}(s) failed`,
-        { requestId, errors: errors.map(e => ({ id: e.id, error: e.error, category: e.category })) }
+        { requestId, errors }
       );
     }
 
