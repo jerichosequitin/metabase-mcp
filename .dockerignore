@@ -47,7 +47,7 @@ docs/
 scripts/
 
 # Development configuration (keep essential build configs)
-.eslintrc.json
+eslint.config.js
 .prettierrc
 .prettierignore
 vitest.config.ts
