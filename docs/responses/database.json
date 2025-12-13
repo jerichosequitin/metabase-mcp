@@ -1,155 +1,87 @@
 {
-  "model_type": "database",
-  "description": "Complete database response structure with tables and metadata",
-  "token_analysis": {
-    "estimated_raw_size": "~25,000-30,000 characters",
-    "major_token_consumers": [
-      "tables[] array with 25 table objects",
-      "Each table contains full metadata (view_count, entity_type, etc.)",
-      "features array with 40+ database capability strings",
-      "schedules object with sync configuration",
-      "dbms_version object with version details"
-    ],
-    "optimization_opportunities": [
-      "Simplify tables array to essential fields only",
-      "Remove features array (40+ capability strings)",
-      "Remove detailed sync schedules",
-      "Remove internal metadata fields",
-      "Keep essential connection and table listing information"
-    ],
-    "estimated_savings": "~70-75% reduction (25,000 to ~6,000-7,500 characters)"
+  "id": "number",
+  "description": "string|null",
+  "features": [
+    "array of 40+ feature strings like:",
+    "actions",
+    "basic-aggregations",
+    "binning",
+    "case-sensitivity-string-filter-options",
+    "date-arithmetics",
+    "datetime-diff",
+    "expressions",
+    "foreign-keys",
+    "inner-join",
+    "left-join",
+    "nested-queries",
+    "right-join",
+    "standard-deviation-aggregations",
+    "... and many more"
+  ],
+  "cache_field_values_schedule": "string (cron expression)|null",
+  "timezone": "string",
+  "auto_run_queries": "boolean",
+  "metadata_sync_schedule": "string (cron expression)",
+  "name": "string",
+  "settings": "null",
+  "caveats": "null",
+  "creator_id": "null",
+  "is_full_sync": "boolean",
+  "updated_at": "string (ISO date)",
+  "cache_ttl": "null",
+  "is_sample": "boolean",
+  "is_on_demand": "boolean",
+  "engine": "string",
+  "initial_sync_status": "string",
+  "is_audit": "boolean",
+  "dbms_version": {
+    "flavor": "string",
+    "version": "string",
+    "semantic-version": "array"
   },
-  "essential_fields": [
-    "id", "name", "description", "engine", "timezone", "auto_run_queries",
-    "is_sample", "is_on_demand", "uploads_enabled", "dbms_version",
-    "initial_sync_status", "created_at", "updated_at", "tables"
+  "uploads_enabled": "boolean",
+  "refingerprint": "null",
+  "created_at": "string (ISO date)",
+  "points_of_interest": "null",
+  "tables": [
+    {
+      "id": "number",
+      "description": "string|null",
+      "entity_type": "string",
+      "view_count": "number",
+      "schema": "string",
+      "database_require_filter": "null",
+      "show_in_getting_started": "boolean",
+      "name": "string",
+      "caveats": "null",
+      "segments": "array",
+      "updated_at": "string (ISO date)",
+      "active": "boolean",
+      "db_id": "number",
+      "visibility_type": "string|null",
+      "field_order": "string",
+      "is_upload": "boolean",
+      "initial_sync_status": "string",
+      "display_name": "string",
+      "metrics": "array",
+      "created_at": "string (ISO date)",
+      "estimated_row_count": "number|null",
+      "points_of_interest": "null"
+    }
   ],
-  "essential_table_fields": [
-    "id", "name", "display_name", "description", "schema", "view_count",
-    "entity_type", "active", "db_id", "field_order", "is_upload",
-    "initial_sync_status", "created_at", "updated_at", "estimated_row_count"
-  ],
-  "essential_dbms_version_fields": [
-    "flavor", "version", "semantic-version"
-  ],
-  "removable_fields": [
-    "features (40+ capability strings)", "schedules", "uploads_schema_name",
-    "uploads_table_prefix", "cache_field_values_schedule", "metadata_sync_schedule",
-    "settings", "caveats", "creator_id", "is_full_sync", "cache_ttl", "is_audit",
-    "refingerprint", "points_of_interest", "is_attached_dwh", "router_database_id",
-    "router_user_attribute", "can_upload", "tables[].database_require_filter",
-    "tables[].show_in_getting_started", "tables[].caveats", "tables[].visibility_type",
-    "tables[].points_of_interest"
-  ],
-  "optimization_notes": [
-    "Database responses contain extensive tables arrays with full table metadata",
-    "Features array contains 40+ database capability strings consuming significant tokens",
-    "Essential for operations: connection info, table listing, basic metadata",
-    "Table view_count preserved for analytics",
-    "Sync schedules and internal metadata removed as not needed for MCP operations",
-    "Database engine and version info preserved for query compatibility"
-  ],
-  "raw_response_structure": {
-    "id": "number",
-    "description": "string|null",
-    "features": [
-      "array of 40+ feature strings like:",
-      "actions",
-      "basic-aggregations",
-      "binning",
-      "case-sensitivity-string-filter-options",
-      "date-arithmetics",
-      "datetime-diff",
-      "expressions",
-      "foreign-keys",
-      "inner-join",
-      "left-join",
-      "nested-queries",
-      "right-join",
-      "standard-deviation-aggregations",
-      "... and many more"
-    ],
-    "cache_field_values_schedule": "string (cron expression)|null",
-    "timezone": "string",
-    "auto_run_queries": "boolean",
-    "metadata_sync_schedule": "string (cron expression)",
-    "name": "string",
-    "settings": "null",
-    "caveats": "null",
-    "creator_id": "null",
-    "is_full_sync": "boolean",
-    "updated_at": "string (ISO date)",
-    "cache_ttl": "null",
-    "is_sample": "boolean",
-    "is_on_demand": "boolean",
-    "engine": "string",
-    "initial_sync_status": "string",
-    "is_audit": "boolean",
-    "dbms_version": {
-      "flavor": "string",
-      "version": "string",
-      "semantic-version": "array"
+  "schedules": {
+    "cache_field_values": {
+      "schedule_day": "string|null",
+      "schedule_frame": "string|null",
+      "schedule_hour": "number|null",
+      "schedule_type": "string"
     },
-    "uploads_enabled": "boolean",
-    "refingerprint": "null",
-    "created_at": "string (ISO date)",
-    "points_of_interest": "null",
-    "tables": [
-      {
-        "id": "number",
-        "description": "string|null",
-        "entity_type": "string",
-        "view_count": "number",
-        "schema": "string",
-        "database_require_filter": "null",
-        "show_in_getting_started": "boolean",
-        "name": "string",
-        "caveats": "null",
-        "segments": "array",
-        "updated_at": "string (ISO date)",
-        "active": "boolean",
-        "db_id": "number",
-        "visibility_type": "string|null",
-        "field_order": "string",
-        "is_upload": "boolean",
-        "initial_sync_status": "string",
-        "display_name": "string",
-        "metrics": "array",
-        "created_at": "string (ISO date)",
-        "estimated_row_count": "number|null",
-        "points_of_interest": "null"
-      }
-    ],
-    "schedules": {
-      "cache_field_values": {
-        "schedule_day": "string|null",
-        "schedule_frame": "string|null",
-        "schedule_hour": "number|null",
-        "schedule_type": "string"
-      },
-      "metadata_sync": {
-        "schedule_day": "string|null",
-        "schedule_frame": "string|null",
-        "schedule_hour": "number|null",
-        "schedule_type": "string"
-      }
-    },
-    "retrieved_at": "string (ISO date)"
+    "metadata_sync": {
+      "schedule_day": "string|null",
+      "schedule_frame": "string|null",
+      "schedule_hour": "number|null",
+      "schedule_type": "string"
+    }
   },
-  "flattened_fields": [
-    "id", "description", "features[]", "cache_field_values_schedule", "timezone", "auto_run_queries",
-    "metadata_sync_schedule", "name", "settings", "caveats", "creator_id", "is_full_sync", "updated_at",
-    "cache_ttl", "is_sample", "is_on_demand", "engine", "initial_sync_status", "is_audit",
-    "dbms_version.flavor", "dbms_version.version", "dbms_version.semantic-version", "uploads_enabled",
-    "refingerprint", "created_at", "points_of_interest", "tables[].id", "tables[].description",
-    "tables[].entity_type", "tables[].view_count", "tables[].schema", "tables[].database_require_filter",
-    "tables[].show_in_getting_started", "tables[].name", "tables[].caveats", "tables[].segments",
-    "tables[].updated_at", "tables[].active", "tables[].db_id", "tables[].visibility_type",
-    "tables[].field_order", "tables[].is_upload", "tables[].initial_sync_status", "tables[].display_name",
-    "tables[].metrics", "tables[].created_at", "tables[].estimated_row_count", "tables[].points_of_interest",
-    "schedules.cache_field_values.schedule_day", "schedules.cache_field_values.schedule_frame",
-    "schedules.cache_field_values.schedule_hour", "schedules.cache_field_values.schedule_type",
-    "schedules.metadata_sync.schedule_day", "schedules.metadata_sync.schedule_frame",
-    "schedules.metadata_sync.schedule_hour", "schedules.metadata_sync.schedule_type", "retrieved_at"
-  ]
+  "retrieved_at": "string (ISO date)"
 }
