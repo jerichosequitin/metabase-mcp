@@ -1,8 +1,7 @@
 {
-  "name": "@jericho/metabase-mcp",
+  "name": "@jerichosequitin/metabase-mcp",
   "version": "1.1.2",
-  "description": "A custom Model Context Protocol server for Metabase integration - Jericho's version",
-  "private": true,
+  "description": "A high-performance MCP server for Metabase analytics integration with response optimization and robust error handling",
   "type": "module",
   "author": {
     "name": "Jericho Sequitin",
@@ -63,9 +62,19 @@
     "model-context-protocol",
     "ai",
     "claude",
-    "custom",
-    "jericho"
+    "analytics",
+    "business-intelligence",
+    "sql"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jerichosequitin/metabase-mcp.git"
+  },
+  "homepage": "https://github.com/jerichosequitin/metabase-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/jerichosequitin/metabase-mcp/issues"
+  },
+  "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
   }

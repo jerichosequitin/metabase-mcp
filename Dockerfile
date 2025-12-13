@@ -4,7 +4,7 @@
 FROM node:lts-alpine
 
 LABEL maintainer="Jericho Sequitin <https://github.com/jerichosequitin>"
-LABEL description="Model Context Protocol server for Metabase"
+LABEL description="High-performance MCP server for Metabase with response optimization and robust error handling"
 LABEL version="1.1.2"
 
 # Set working directory
