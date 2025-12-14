@@ -251,8 +251,9 @@ describe('handleRetrieve', () => {
       const result = await handleRetrieve(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError);
 
       expect(mockApiClient.getCard).toHaveBeenCalledTimes(2);
-      expect(result.content[0].text).toContain('"successful_retrievals": 1');
-      expect(result.content[0].text).toContain('"failed_retrievals": 1');
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.successful_retrievals).toBe(1);
+      expect(responseData.failed_retrievals).toBe(1);
     });
 
     it('should include values_source_type and values_source_config in card parameters', async () => {
@@ -737,8 +738,9 @@ describe('handleRetrieve', () => {
       const request = createMockRequest('retrieve', { model: 'card', ids: [1] });
       const result = await handleRetrieve(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError);
 
-      expect(result.content[0].text).toContain('"cache": 1');
-      expect(result.content[0].text).toContain('"api": 0');
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.source.cache).toBe(1);
+      expect(responseData.source.api).toBe(0);
     });
 
     it('should indicate API source in response', async () => {
@@ -748,8 +750,9 @@ describe('handleRetrieve', () => {
       const request = createMockRequest('retrieve', { model: 'card', ids: [1] });
       const result = await handleRetrieve(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError);
 
-      expect(result.content[0].text).toContain('"cache": 0');
-      expect(result.content[0].text).toContain('"api": 1');
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.source.cache).toBe(0);
+      expect(responseData.source.api).toBe(1);
     });
   });
 

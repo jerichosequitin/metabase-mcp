@@ -203,8 +203,9 @@ describe('handleSearch', () => {
       const request = createMockRequest('search', { query: 'nonexistent' });
       const result = await handleSearch(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError);
 
-      expect(result.content[0].text).toContain('total_results');
-      expect(result.content[0].text).toContain('"results": []');
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.search_metrics.total_results).toBeDefined();
+      expect(responseData.results).toEqual([]);
     });
 
     it('should handle API errors', async () => {

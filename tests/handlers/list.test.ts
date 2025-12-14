@@ -93,7 +93,8 @@ describe('handleList', () => {
       const request = createMockRequest('list', { model: 'cards' });
       const result = await handleList(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError);
 
-      expect(result.content[0].text).toContain('total_items": 0');
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.total_items).toBe(0);
     });
 
     it('should handle API errors for cards', async () => {
@@ -129,7 +130,8 @@ describe('handleList', () => {
       const request = createMockRequest('list', { model: 'dashboards' });
       const result = await handleList(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError);
 
-      expect(result.content[0].text).toContain('total_items": 0');
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.total_items).toBe(0);
     });
   });
 
@@ -153,7 +155,8 @@ describe('handleList', () => {
       const request = createMockRequest('list', { model: 'tables' });
       const result = await handleList(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError);
 
-      expect(result.content[0].text).toContain('total_items": 0');
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.total_items).toBe(0);
     });
   });
 
@@ -177,7 +180,8 @@ describe('handleList', () => {
       const request = createMockRequest('list', { model: 'databases' });
       const result = await handleList(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError);
 
-      expect(result.content[0].text).toContain('total_items": 0');
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.total_items).toBe(0);
     });
   });
 
@@ -201,7 +205,8 @@ describe('handleList', () => {
       const request = createMockRequest('list', { model: 'collections' });
       const result = await handleList(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError);
 
-      expect(result.content[0].text).toContain('total_items": 0');
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.total_items).toBe(0);
     });
   });
 
@@ -235,7 +240,8 @@ describe('handleList', () => {
       const request = createMockRequest('list', { model: 'cards' });
       const result = await handleList(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError);
 
-      expect(result.content[0].text).toContain('"source": "cache"');
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.source).toBe('cache');
     });
 
     it('should indicate API source in response', async () => {
@@ -245,7 +251,8 @@ describe('handleList', () => {
       const request = createMockRequest('list', { model: 'cards' });
       const result = await handleList(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError);
 
-      expect(result.content[0].text).toContain('"source": "api"');
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.source).toBe('api');
     });
   });
 

@@ -46,12 +46,11 @@ METABASE_USER_EMAIL=email@example.com
 METABASE_PASSWORD=password
 
 # Optional
-LOG_LEVEL=info                         # debug, info, warn, error, fatal
+LOG_LEVEL=info                         # debug, info, warn, error, fatal (debug enables pretty JSON)
 CACHE_TTL_MS=600000                    # 10 min default
 REQUEST_TIMEOUT_MS=600000              # 10 min default
 EXPORT_DIRECTORY=~/Downloads/Metabase
 METABASE_READ_ONLY_MODE=true           # Restrict to SELECT queries
-JSON_BEAUTIFY=false                    # Beautify JSON responses (compact by default)
 ```
 
 ## Rules
