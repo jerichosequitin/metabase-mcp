@@ -52,7 +52,8 @@ Add the following to your MCP client configuration:
         "METABASE_READ_ONLY_MODE": "true",             // Restrict to SELECT queries
         "LOG_LEVEL": "info",                           // debug, info, warn, error, fatal
         "CACHE_TTL_MS": "600000",                      // 10 minutes
-        "REQUEST_TIMEOUT_MS": "600000"                 // 10 minutes
+        "REQUEST_TIMEOUT_MS": "600000",                // 10 minutes
+        "JSON_BEAUTIFY": "false"                       // Beautify JSON responses (compact by default)
       }
     }
   }
@@ -85,7 +86,7 @@ Or build locally: `docker build -t metabase-mcp .` and use `metabase-mcp` as the
 
 **Required flags:** `-i` (interactive, for MCP stdio), `--rm` (cleanup), `--init` (signal handling)
 
-**Environment variables:** Pass via `-e` flags. See [Manual Configuration](#option-2-manual-configuration) for all options. Docker defaults: `LOG_LEVEL=info`, `METABASE_READ_ONLY_MODE=true`, `EXPORT_DIRECTORY=/home/node/exports`.
+**Environment variables:** Pass via `-e` flags. See [Manual Configuration](#option-2-manual-configuration) for all options. Docker defaults: `LOG_LEVEL=info`, `METABASE_READ_ONLY_MODE=true`, `EXPORT_DIRECTORY=/home/node/exports`, `JSON_BEAUTIFY=false`.
 
 ## Available Tools
 

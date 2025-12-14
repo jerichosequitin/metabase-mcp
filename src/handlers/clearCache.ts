@@ -1,6 +1,6 @@
 import { CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 import { MetabaseApiClient } from '../api.js';
-import { handleApiError, validateEnumValue } from '../utils/index.js';
+import { handleApiError, validateEnumValue, formatJson } from '../utils/index.js';
 
 export function handleClearCache(
   request: CallToolRequest,
@@ -142,26 +142,22 @@ export function handleClearCache(
       content: [
         {
           type: 'text',
-          text: JSON.stringify(
-            {
-              message,
-              cache_type: cacheType,
-              cache_status: cacheStatus,
-              next_fetch_will_be: 'fresh from API',
-              cache_info: {
-                cache_explanation:
-                  'Unified cache system with separate individual item and list caches for optimal performance',
-                cache_types: {
-                  individual:
-                    'Cache for specific items accessed by ID (cards, dashboards, tables, databases, collections, fields)',
-                  lists:
-                    'Cache for bulk list operations (cards-list, dashboards-list, tables-list, databases-list, collections-list)',
-                },
+          text: formatJson({
+            message,
+            cache_type: cacheType,
+            cache_status: cacheStatus,
+            next_fetch_will_be: 'fresh from API',
+            cache_info: {
+              cache_explanation:
+                'Unified cache system with separate individual item and list caches for optimal performance',
+              cache_types: {
+                individual:
+                  'Cache for specific items accessed by ID (cards, dashboards, tables, databases, collections, fields)',
+                lists:
+                  'Cache for bulk list operations (cards-list, dashboards-list, tables-list, databases-list, collections-list)',
               },
             },
-            null,
-            2
-          ),
+          }),
         },
       ],
     };

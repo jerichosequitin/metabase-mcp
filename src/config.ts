@@ -52,6 +52,10 @@ const envSchema = z
       .string()
       .default('true')
       .transform(val => val.toLowerCase() === 'true'),
+    JSON_BEAUTIFY: z
+      .string()
+      .default('false')
+      .transform(val => val.toLowerCase() === 'true'),
   })
   .refine(data => data.METABASE_API_KEY || (data.METABASE_USER_EMAIL && data.METABASE_PASSWORD), {
     message:
@@ -85,6 +89,7 @@ function createTestConfig() {
     REQUEST_TIMEOUT_MS: 600000,
     EXPORT_DIRECTORY: join(homedir(), 'Downloads', 'Metabase'),
     METABASE_READ_ONLY_MODE: true,
+    JSON_BEAUTIFY: false,
   };
 }
 
