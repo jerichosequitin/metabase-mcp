@@ -1,7 +1,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
-const VERSION = '1.1.3';
+const VERSION = '1.1.4';
 import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
