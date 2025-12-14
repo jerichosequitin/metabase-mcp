@@ -11,11 +11,6 @@ const version = pkg.version;
 
 const files = [
   {
-    path: 'README.md',
-    pattern: /\*\*Version\*\*: [\d.]+/,
-    replacement: `**Version**: ${version}`,
-  },
-  {
     path: 'manifest.json',
     pattern: /"version": "[\d.]+"/,
     replacement: `"version": "${version}"`,

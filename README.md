@@ -9,17 +9,11 @@
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/jerichosequitin)
 
+A high-performance Model Context Protocol server for AI integration with Metabase analytics platforms. Features response optimization, robust error handling, and comprehensive data access tools.
+
 <a href="https://glama.ai/mcp/servers/@jerichosequitin/Metabase">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@jerichosequitin/Metabase/badge" />
 </a>
-
-&nbsp;
-
-**Version**: 1.1.4
-
-**Author**: Jericho Sequitin (@jerichosequitin)
-
-A high-performance Model Context Protocol server for AI integration with Metabase analytics platforms. Features response optimization, robust error handling, and comprehensive data access tools.
 
 ## Key Features
 
