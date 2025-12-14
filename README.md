@@ -1,6 +1,19 @@
-# Metabase MCP Server
+# Metabase MCP
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jerichosequitin/metabase-mcp)
+[![npm version](https://img.shields.io/npm/v/@jerichosequitin/metabase-mcp)](https://www.npmjs.com/package/@jerichosequitin/metabase-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-brightgreen?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![GitHub stars](https://img.shields.io/github/stars/jerichosequitin/metabase-mcp)](https://github.com/jerichosequitin/metabase-mcp/stargazers)
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/jerichosequitin)
+
+<a href="https://glama.ai/mcp/servers/@jerichosequitin/Metabase">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@jerichosequitin/Metabase/badge" />
+</a>
+
+&nbsp;
 
 **Version**: 1.1.4
 
@@ -116,6 +129,7 @@ Export large datasets up to 1M rows to the configured export directory.
 - **Formats**: CSV, JSON, XLSX
 - **SQL Mode**: Export custom query results
 - **Card Mode**: Export saved card results with optional filtering
+- **Note**: When using hosted remote deployments (e.g., Glama), exported files are saved inside the container and are inaccessible. Use `execute` for query results directly, or run locally via npx/Docker for full export functionality.
 
 ### `clear_cache`
 Clear internal cache with granular control.
