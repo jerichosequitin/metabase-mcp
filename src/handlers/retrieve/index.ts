@@ -9,6 +9,7 @@ import {
   validateEnumValue,
   parseAndValidatePositiveInteger,
   parseAndValidateNonNegativeInteger,
+  formatJson,
 } from '../../utils/index.js';
 import {
   MAX_IDS_PER_REQUEST,
@@ -408,7 +409,7 @@ export async function handleRetrieve(
     logInfo(logMessage);
 
     // Monitor response size for token usage optimization feedback
-    const responseText = JSON.stringify(response, null, 2);
+    const responseText = formatJson(response);
     const responseSizeChars = responseText.length;
     const estimatedTokens = Math.ceil(responseSizeChars / 4); // Rough estimation: ~4 chars per token
 

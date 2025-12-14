@@ -50,7 +50,7 @@ Add the following to your MCP client configuration:
         // Optional (defaults shown)
         "EXPORT_DIRECTORY": "~/Downloads/Metabase",    // Export location
         "METABASE_READ_ONLY_MODE": "true",             // Restrict to SELECT queries
-        "LOG_LEVEL": "info",                           // debug, info, warn, error, fatal
+        "LOG_LEVEL": "info",                           // debug, info, warn, error, fatal (debug enables pretty JSON)
         "CACHE_TTL_MS": "600000",                      // 10 minutes
         "REQUEST_TIMEOUT_MS": "600000"                 // 10 minutes
       }

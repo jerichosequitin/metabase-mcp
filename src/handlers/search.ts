@@ -2,7 +2,12 @@ import { CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
 import { MetabaseApiClient } from '../api.js';
 import { ErrorCode, McpError } from '../types/core.js';
 import { ValidationErrorFactory } from '../utils/errorFactory.js';
-import { handleApiError, validatePositiveInteger, validateEnumValue } from '../utils/index.js';
+import {
+  handleApiError,
+  validatePositiveInteger,
+  validateEnumValue,
+  formatJson,
+} from '../utils/index.js';
 
 export async function handleSearch(
   request: CallToolRequest,
@@ -333,24 +338,20 @@ export async function handleSearch(
       content: [
         {
           type: 'text',
-          text: JSON.stringify(
-            {
-              search_metrics: {
-                method: searchMethod,
-                total_results: totalResults,
-                search_time_ms: searchTime,
-                parameters_used: usedParameters,
-              },
-              recommended_actions: recommendedActions,
-              results_by_model: Object.keys(resultsByModel).map(model => ({
-                model,
-                count: resultsByModel[model].length,
-              })),
-              results: enhancedResults,
+          text: formatJson({
+            search_metrics: {
+              method: searchMethod,
+              total_results: totalResults,
+              search_time_ms: searchTime,
+              parameters_used: usedParameters,
             },
-            null,
-            2
-          ),
+            recommended_actions: recommendedActions,
+            results_by_model: Object.keys(resultsByModel).map(model => ({
+              model,
+              count: resultsByModel[model].length,
+            })),
+            results: enhancedResults,
+          }),
         },
       ],
     };

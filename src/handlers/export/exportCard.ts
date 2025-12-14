@@ -4,6 +4,7 @@ import {
   sanitizeFilename,
   analyzeXlsxContent,
   validateMetabaseResponse,
+  formatJson,
 } from '../../utils/index.js';
 import { config, authMethod, AuthMethod } from '../../config.js';
 import * as XLSX from 'xlsx';
@@ -237,14 +238,10 @@ export async function exportCard(
         content: [
           {
             type: 'text',
-            text: JSON.stringify(
-              {
-                success: false,
-                error: 'Card returned no data to export',
-              },
-              null,
-              2
-            ),
+            text: formatJson({
+              success: false,
+              error: 'Card returned no data to export',
+            }),
           },
         ],
       };
@@ -305,7 +302,7 @@ export async function exportCard(
         content: [
           {
             type: 'text',
-            text: JSON.stringify(errorResponse, null, 2),
+            text: formatJson(errorResponse),
           },
         ],
         isError: true,
@@ -328,7 +325,7 @@ export async function exportCard(
       content: [
         {
           type: 'text',
-          text: JSON.stringify(successResponse, null, 2),
+          text: formatJson(successResponse),
         },
       ],
     };

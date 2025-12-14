@@ -6,6 +6,7 @@ import {
   validateEnumValue,
   parseAndValidatePositiveInteger,
   parseAndValidateNonNegativeInteger,
+  formatJson,
 } from '../../utils/index.js';
 import { ValidationErrorFactory } from '../../utils/errorFactory.js';
 import {
@@ -197,7 +198,7 @@ export async function handleList(
       content: [
         {
           type: 'text',
-          text: JSON.stringify(response, null, 2),
+          text: formatJson(response),
         },
       ],
     };

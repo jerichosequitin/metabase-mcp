@@ -1,4 +1,4 @@
-import { generateRequestId } from '../../utils/index.js';
+import { generateRequestId, formatJson } from '../../utils/index.js';
 import { ErrorCode, McpError, isMcpError } from '../../types/core.js';
 import { MetabaseApiClient } from '../../api.js';
 import {
@@ -336,7 +336,7 @@ async function handleDashboardResource(
     {
       uri,
       mimeType: 'application/json',
-      text: JSON.stringify(optimizedDashboard, null, 2),
+      text: formatJson(optimizedDashboard),
     },
   ];
 
@@ -368,7 +368,7 @@ async function handleCardResource(
     {
       uri,
       mimeType: 'application/json',
-      text: JSON.stringify(optimizedCard, null, 2),
+      text: formatJson(optimizedCard),
     },
   ];
 
@@ -400,7 +400,7 @@ async function handleDatabaseResource(
     {
       uri,
       mimeType: 'application/json',
-      text: JSON.stringify(optimizedDatabase, null, 2),
+      text: formatJson(optimizedDatabase),
     },
   ];
 
@@ -432,7 +432,7 @@ async function handleTableResource(
     {
       uri,
       mimeType: 'application/json',
-      text: JSON.stringify(optimizedTable, null, 2),
+      text: formatJson(optimizedTable),
     },
   ];
 
@@ -493,7 +493,7 @@ async function handleFieldResource(
     {
       uri,
       mimeType: 'application/json',
-      text: JSON.stringify(optimizedField, null, 2),
+      text: formatJson(optimizedField),
     },
   ];
 
@@ -534,7 +534,7 @@ async function handleMetricResource(
     {
       uri,
       mimeType: 'application/json',
-      text: JSON.stringify(optimizedMetric, null, 2),
+      text: formatJson(optimizedMetric),
     },
   ];
 
@@ -618,7 +618,7 @@ async function handleCollectionResource(
     {
       uri,
       mimeType: 'application/json',
-      text: JSON.stringify(collectionWithItems, null, 2),
+      text: formatJson(collectionWithItems),
     },
   ];
 
@@ -687,7 +687,7 @@ async function handleRecentItemsResource(
     {
       uri,
       mimeType: 'application/json',
-      text: JSON.stringify(recentItems, null, 2),
+      text: formatJson(recentItems),
     },
   ];
 
