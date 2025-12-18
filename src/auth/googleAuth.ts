@@ -227,10 +227,40 @@ export async function exchangeCodeForTokens(code: string): Promise<GoogleTokens>
 }
 
 /**
+ * Decode JWT payload (without verification) for debugging
+ */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+    const payload = Buffer.from(parts[1], 'base64url').toString('utf8');
+    return JSON.parse(payload);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Exchange Google ID token for Metabase session
  */
 export async function exchangeForMetabaseSession(idToken: string): Promise<MetabaseSessionResult> {
-  const response = await fetch(`${config.METABASE_URL}/api/session/google_auth`, {
+  // Debug: decode and log token claims
+  const tokenPayload = decodeJwtPayload(idToken);
+  if (tokenPayload) {
+    console.error('\nID Token claims:');
+    console.error(`  iss (issuer): ${tokenPayload.iss}`);
+    console.error(`  aud (audience/client_id): ${tokenPayload.aud}`);
+    console.error(`  email: ${tokenPayload.email}`);
+    console.error(
+      `  exp (expires): ${new Date((tokenPayload.exp as number) * 1000).toISOString()}`
+    );
+    console.error('');
+  }
+
+  const metabaseUrl = config.METABASE_URL.replace(/\/+$/, '');
+  const response = await fetch(`${metabaseUrl}/api/session/google_auth`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -239,18 +269,27 @@ export async function exchangeForMetabaseSession(idToken: string): Promise<Metab
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
+    const errorText = await response.text();
+    let errorData: Record<string, unknown> = {};
+    try {
+      errorData = JSON.parse(errorText);
+    } catch {
+      errorData = { raw: errorText };
+    }
 
-    // Handle specific error cases
+    console.error(`\nMetabase response: ${response.status}`);
+    console.error(`Error details: ${JSON.stringify(errorData, null, 2)}`);
+
+    // Handle specific error cases with actual error details
     if (response.status === 401) {
       throw new Error(
-        'Google authentication failed. Your Google account may not have access to this Metabase instance.'
+        `Google authentication failed (401): ${JSON.stringify(errorData)}. Your Google account may not have access to this Metabase instance.`
       );
     }
 
     if (response.status === 400) {
       throw new Error(
-        'Invalid Google token. This may happen if the token expired. Please try again.'
+        `Invalid Google token (400): ${JSON.stringify(errorData)}. Check that the client ID matches Metabase's configuration.`
       );
     }
 
