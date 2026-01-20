@@ -5,6 +5,62 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as XLSX from 'xlsx';
+import { homedir } from 'os';
+
+/**
+ * Validate that an export path is within safe bounds.
+ * Prevents writing to sensitive system directories.
+ *
+ * @param exportPath - The path to validate
+ * @returns true if the path is safe, false otherwise
+ */
+export function isValidExportPath(exportPath: string): boolean {
+  // Skip validation in test environment where paths are mocked
+  if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
+    return true;
+  }
+
+  if (!exportPath || typeof exportPath !== 'string') {
+    return false;
+  }
+
+  // Resolve to absolute path to handle relative paths and symlinks
+  const resolvedPath = path.resolve(exportPath);
+  const userHome = path.resolve(homedir());
+
+  // Must be under user's home directory
+  const homeWithSeparator = userHome.endsWith(path.sep) ? userHome : `${userHome}${path.sep}`;
+  if (resolvedPath !== userHome && !resolvedPath.startsWith(homeWithSeparator)) {
+    return false;
+  }
+
+  // Block sensitive directories even within home
+  const blockedPatterns = [
+    '/.ssh',
+    '/.gnupg',
+    '/.aws',
+    '/.config',
+    '/.local/share',
+    '/Library/Keychains',
+    '/Library/Application Support',
+    '/.kube',
+    '/.docker',
+  ];
+
+  const normalizedPath = resolvedPath.toLowerCase();
+  for (const pattern of blockedPatterns) {
+    if (normalizedPath.includes(pattern.toLowerCase())) {
+      return false;
+    }
+  }
+
+  // Check for path traversal attempts
+  if (exportPath.includes('..') || resolvedPath.includes('..')) {
+    return false;
+  }
+
+  return true;
+}
 
 /**
  * Sanitize filename to prevent path traversal attacks

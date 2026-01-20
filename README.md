@@ -187,6 +187,8 @@ Creates `metabase-mcp-{version}.mcpb` ready for GitHub Releases.
 
 **Authentication**: API key authentication is recommended over email/password for production use.
 
+**Export Safety**: Export file paths are validated to stay within the user's home directory and avoid sensitive subdirectories.
+
 ## License
 
 This project is licensed under the MIT License.
