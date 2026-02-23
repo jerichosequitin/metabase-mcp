@@ -451,7 +451,7 @@ export class MetabaseServer {
                 dashboard_url: {
                   type: 'string',
                   description:
-                    'Metabase dashboard URL containing a numeric dashboard ID (for example: https://metabase.example.com/dashboard/123-my-dashboard).',
+                    'Metabase dashboard URL containing a numeric dashboard ID (for example: https://metabase.example.com/dashboard/123-my-dashboard). If dashboard_filters is omitted, query-string filters in the URL are used.',
                 },
                 dashboard_filters: {
                   type: 'object',

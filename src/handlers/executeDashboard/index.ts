@@ -8,7 +8,6 @@ import {
   validateMetabaseResponse,
   formatJson,
   normalizeCardParametersForMetabase,
-  validateCardParameters,
 } from '../../utils/index.js';
 import {
   DashboardExecutionResponse,
@@ -85,20 +84,62 @@ function parseDashboardIdFromUrl(urlString: string): number | null {
   }
 }
 
-function isValidMetabaseTarget(target: unknown): target is [string, [string, string]] {
-  if (!Array.isArray(target) || target.length !== 2) {
+function isValidMetabaseTarget(target: unknown): target is [string, ...unknown[]] {
+  if (!Array.isArray(target) || target.length === 0) {
     return false;
   }
 
-  if (typeof target[0] !== 'string') {
-    return false;
+  return typeof target[0] === 'string';
+}
+
+function extractDashboardFiltersFromUrl(urlString: string): Record<string, DashboardFilterValue> {
+  try {
+    const parsedUrl = new URL(urlString);
+    const extracted: Record<string, DashboardFilterValue> = {};
+    const uniqueKeys = new Set(parsedUrl.searchParams.keys());
+
+    uniqueKeys.forEach(key => {
+      if (!key || key.trim() === '') {
+        return;
+      }
+
+      const values = parsedUrl.searchParams
+        .getAll(key)
+        .map(value => value.trim())
+        .filter(value => value !== '');
+
+      if (values.length === 0) {
+        return;
+      }
+
+      extracted[key] = values.length === 1 ? values[0] : values;
+    });
+
+    return extracted;
+  } catch {
+    return {};
+  }
+}
+
+function mergeRawDashboardFilters(
+  argFilters: unknown,
+  dashboardUrlArg: unknown
+): Record<string, DashboardFilterValue> | unknown {
+  const urlFilters =
+    typeof dashboardUrlArg === 'string' ? extractDashboardFiltersFromUrl(dashboardUrlArg) : {};
+
+  if (argFilters === undefined) {
+    return Object.keys(urlFilters).length > 0 ? urlFilters : undefined;
   }
 
-  if (!Array.isArray(target[1]) || target[1].length !== 2) {
-    return false;
+  if (!argFilters || typeof argFilters !== 'object' || Array.isArray(argFilters)) {
+    return argFilters;
   }
 
-  return typeof target[1][0] === 'string' && typeof target[1][1] === 'string';
+  return {
+    ...urlFilters,
+    ...(argFilters as Record<string, DashboardFilterValue>),
+  };
 }
 
 function normalizeDashboardMode(
@@ -322,7 +363,7 @@ function buildPreflightInsights(
     const validMappings: Array<{
       dashcardId: number;
       cardId: number;
-      target: [string, [string, string]];
+      target: [string, ...unknown[]];
       type: string;
     }> = [];
     let invalidMappingCount = 0;
@@ -352,20 +393,36 @@ function buildPreflightInsights(
 
     const issues: FilterIssue[] = [];
 
+    if (invalidMappingCount > 0) {
+      const issue: FilterIssue = {
+        code: 'invalid_target_mapping',
+        filter_slug: slug,
+        message: `Filter "${slug}" has ${invalidMappingCount} invalid mapping target(s)`,
+      };
+
+      issues.push(issue);
+      blockingIssues.push(issue);
+      unmatchedFilterSlugs.push(slug);
+      warnings.add(
+        `Filter "${slug}" has ${invalidMappingCount} invalid parameter mapping target(s)`
+      );
+    }
+
     if (validMappings.length === 0) {
       const issue: FilterIssue = {
-        code: invalidMappingCount > 0 ? 'invalid_target_mapping' : 'unmapped_filter_slug',
+        code: 'unmapped_filter_slug',
         filter_slug: slug,
-        message:
-          invalidMappingCount > 0
-            ? `Filter "${slug}" has mappings, but all mapped targets are invalid`
-            : `Filter "${slug}" is defined on the dashboard but does not map to executable cards`,
+        message: `Filter "${slug}" is defined on the dashboard but does not map to executable cards`,
       };
 
       blockingIssues.push(issue);
-      unmatchedFilterSlugs.push(slug);
+      if (!unmatchedFilterSlugs.includes(slug)) {
+        unmatchedFilterSlugs.push(slug);
+      }
       issues.push(issue);
-    } else {
+    }
+
+    if (issues.length === 0) {
       matchedFilterSlugs.add(slug);
       if (
         validMappings.some(mapping => mapping.target[0] === 'dimension') &&
@@ -373,12 +430,6 @@ function buildPreflightInsights(
       ) {
         suggestedFilterPayload[slug] = [value];
       }
-    }
-
-    if (invalidMappingCount > 0) {
-      warnings.add(
-        `Filter "${slug}" has ${invalidMappingCount} invalid parameter mapping target(s)`
-      );
     }
 
     const uniqueDashcardIds = new Set(validMappings.map(mapping => mapping.dashcardId));
@@ -487,7 +538,8 @@ export async function handleExecuteDashboard(
   const strictFilters = normalizeStrictFilters(args?.strict_filters, mode, requestId, logWarn);
   const rowLimitArg = args?.row_limit;
   const rowLimit = typeof rowLimitArg === 'number' ? rowLimitArg : DEFAULT_ROW_LIMIT;
-  const dashboardFilters = normalizeDashboardFilters(args?.dashboard_filters, requestId, logWarn);
+  const rawDashboardFilters = mergeRawDashboardFilters(args?.dashboard_filters, dashboardUrlArg);
+  const dashboardFilters = normalizeDashboardFilters(rawDashboardFilters, requestId, logWarn);
 
   if (dashboardIdArg === undefined && dashboardUrlArg === undefined) {
     logWarn('Missing required parameters: dashboard_id or dashboard_url must be provided', {
@@ -636,22 +688,6 @@ export async function handleExecuteDashboard(
         const normalizedCardParameters = normalizeCardParametersForMetabase(
           mappingResult.cardParameters
         );
-
-        if (normalizedCardParameters.length > 0) {
-          try {
-            validateCardParameters(normalizedCardParameters, requestId, logWarn);
-          } catch (error: any) {
-            return {
-              status: 'error' as const,
-              error: {
-                dashcard_id: card.dashcardId,
-                card_id: card.cardId,
-                card_name: card.cardName,
-                error: `Invalid mapped dashboard filters for card: ${error?.message || 'unknown validation error'}`,
-              },
-            };
-          }
-        }
 
         const requestBody = {
           parameters: normalizedCardParameters,

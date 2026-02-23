@@ -123,6 +123,7 @@ Discover dashboard filter mappings or execute all executable cards in a dashboar
 - **Input**: `dashboard_id` or `dashboard_url`
 - **Mode**: `mode="discover"` (recommended first) or `mode="execute"` (default)
 - **Filters**: `dashboard_filters` as slug-to-value map (`string`/`number`/`boolean`, or arrays of those values for multi-select dimensions)
+- **URL Query Support**: If `dashboard_filters` is omitted, query params from `dashboard_url` are used as filter inputs
 - **Discover**: Returns `execution_readiness`, `filter_mapping_matrix`, and `suggested_filter_payload` without executing cards
 - **Execution**: Runs each dashcard with dashboard context and returns normalized per-card data
 - **Strictness**: `strict_filters` (default true in execute mode) fails fast when provided filters are unknown or unmapped

@@ -188,6 +188,64 @@ describe('handleExecuteDashboard (execute_dashboard command)', () => {
       expect(responseData.filter_mapping_matrix).toHaveLength(2);
       expect(mockApiClient.request).not.toHaveBeenCalled();
     });
+
+    it('should extract dashboard filters from dashboard_url query params when dashboard_filters is omitted', async () => {
+      const request = createMockRequest('execute_dashboard', {
+        dashboard_url: 'https://metabase.example.com/dashboard/321-test?date=2026-02-28&facility_name=Centro+M%C3%A9dico+Teknon',
+        mode: 'discover',
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      mockApiClient.getDashboard.mockResolvedValueOnce(
+        createCachedResponse({
+          id: 321,
+          name: 'Parsed Dashboard',
+          parameters: [
+            { id: 'param-date', slug: 'date', name: 'Date', type: 'date/single' },
+            { id: 'param-facility', slug: 'facility_name', name: 'Facility Name', type: 'string/=' },
+          ],
+          dashcards: [
+            {
+              id: 40,
+              card_id: 400,
+              card: { name: 'Card Numbered' },
+              parameter_mappings: [
+                {
+                  parameter_id: 'param-date',
+                  target: ['dimension', ['template-tag', 'month']],
+                },
+                {
+                  parameter_id: 'param-facility',
+                  target: ['dimension', ['template-tag', 'name']],
+                },
+              ],
+            },
+          ],
+        })
+      );
+
+      const result = await handleExecuteDashboard(
+        request as any,
+        'test-request-id',
+        mockApiClient as any,
+        logDebug,
+        logInfo,
+        logWarn,
+        logError
+      );
+
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.applied_filters).toEqual({
+        date: '2026-02-28',
+        facility_name: 'Centro Médico Teknon',
+      });
+      expect(responseData.filter_resolution.provided_filter_slugs).toEqual(['date', 'facility_name']);
+      expect(responseData.execution_readiness.ready).toBe(true);
+      expect(responseData.execution_readiness.suggested_filter_payload).toEqual({
+        date: ['2026-02-28'],
+        facility_name: ['Centro Médico Teknon'],
+      });
+    });
   });
 
   describe('Execute mode', () => {
@@ -206,6 +264,56 @@ describe('handleExecuteDashboard (execute_dashboard command)', () => {
           name: 'Unknown Filter Dashboard',
           parameters: [],
           dashcards: [{ id: 30, card_id: 300, card: { name: 'Card A' }, parameter_mappings: [] }],
+        })
+      );
+
+      await expect(
+        handleExecuteDashboard(
+          request as any,
+          'test-request-id',
+          mockApiClient as any,
+          logDebug,
+          logInfo,
+          logWarn,
+          logError
+        )
+      ).rejects.toThrow('Dashboard filter validation failed');
+
+      expect(mockApiClient.request).not.toHaveBeenCalled();
+    });
+
+    it('should fail fast when a provided filter has partially invalid target mappings', async () => {
+      const request = createMockRequest('execute_dashboard', {
+        dashboard_id: 9,
+        dashboard_filters: {
+          facility_name: 'Centro Médico Teknon',
+        },
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      mockApiClient.getDashboard.mockResolvedValueOnce(
+        createCachedResponse({
+          id: 9,
+          name: 'Invalid Mapping Dashboard',
+          parameters: [
+            { id: 'param-facility', slug: 'facility_name', name: 'Facility Name', type: 'string/=' },
+          ],
+          dashcards: [
+            {
+              id: 90,
+              card_id: 900,
+              card: { name: 'Card A' },
+              parameter_mappings: [
+                { parameter_id: 'param-facility', target: ['dimension', ['template-tag', 'name']] },
+              ],
+            },
+            {
+              id: 91,
+              card_id: 901,
+              card: { name: 'Card B' },
+              parameter_mappings: [{ parameter_id: 'param-facility', target: null }],
+            },
+          ],
         })
       );
 

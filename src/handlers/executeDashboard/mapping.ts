@@ -1,20 +1,12 @@
 import type { MetabaseCardParameter } from '../../utils/parameterValidation.js';
 import { DashboardFilterValue, DashboardParameterInfo } from './types.js';
 
-function isValidMetabaseTarget(target: unknown): target is [string, [string, string]] {
-  if (!Array.isArray(target) || target.length !== 2) {
+function isValidMetabaseTarget(target: unknown): target is [string, ...unknown[]] {
+  if (!Array.isArray(target) || target.length === 0) {
     return false;
   }
 
-  if (typeof target[0] !== 'string') {
-    return false;
-  }
-
-  if (!Array.isArray(target[1]) || target[1].length !== 2) {
-    return false;
-  }
-
-  return typeof target[1][0] === 'string' && typeof target[1][1] === 'string';
+  return typeof target[0] === 'string';
 }
 
 interface CardMappingResult {
