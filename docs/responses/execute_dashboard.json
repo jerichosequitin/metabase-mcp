@@ -1,0 +1,59 @@
+{
+  "success": true,
+  "dashboard": {
+    "id": 123,
+    "name": "Revenue Dashboard",
+    "source": "api",
+    "total_dashcards": 4,
+    "executable_dashcards": 3,
+    "executed_cards": 2,
+    "failed_cards": 1,
+    "skipped_cards": 1
+  },
+  "applied_filters": {
+    "region": "EMEA",
+    "year": 2025
+  },
+  "warnings": ["Dashcard 12 has no parameter mapping for dashboard filter \"region\""],
+  "skipped": [
+    {
+      "dashcard_id": 19,
+      "card_id": null,
+      "reason": "non-executable dashcard (missing dashcard id or card id)"
+    }
+  ],
+  "errors": [
+    {
+      "dashcard_id": 13,
+      "card_id": 887,
+      "card_name": "Conversion Rate",
+      "error": "Dashboard card execution failed: Access denied."
+    }
+  ],
+  "cards": [
+    {
+      "dashcard_id": 11,
+      "card_id": 886,
+      "card_name": "Revenue by Region",
+      "status": "success",
+      "row_count": 100,
+      "original_row_count": 145,
+      "applied_limit": 100,
+      "data": {
+        "data": {
+          "rows": [["EMEA", 120034.5]],
+          "cols": [
+            {
+              "name": "region"
+            },
+            {
+              "name": "revenue"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "usage_guidance": "This response mirrors dashboard-style execution in API context. For very large cards or dashboards, reduce row_limit or run execute/export on specific card IDs.",
+  "retrieved_at": "2026-02-23T12:34:56.000Z"
+}

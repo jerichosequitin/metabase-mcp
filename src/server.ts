@@ -18,6 +18,7 @@ import { MetabaseApiClient } from './api.js';
 import {
   handleList,
   handleExecute,
+  handleExecuteDashboard,
   handleExport,
   handleSearch,
   handleClearCache,
@@ -430,6 +431,49 @@ export class MetabaseServer {
             },
           },
           {
+            name: 'execute_dashboard',
+            description:
+              'Execute all executable cards in a dashboard using dashboard context and optional dashboard-level filter values. Accepts dashboard_id or dashboard_url, maps dashboard filters to card parameters, executes each dashcard, and returns normalized per-card data for discussion.',
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: false,
+              openWorldHint: true,
+            },
+            inputSchema: {
+              type: 'object',
+              properties: {
+                dashboard_id: {
+                  type: 'number',
+                  description:
+                    'Dashboard ID to execute. Provide this OR dashboard_url. If both are provided, dashboard_id takes precedence.',
+                },
+                dashboard_url: {
+                  type: 'string',
+                  description:
+                    'Metabase dashboard URL containing a numeric dashboard ID (for example: https://metabase.example.com/dashboard/123-my-dashboard).',
+                },
+                dashboard_filters: {
+                  type: 'object',
+                  description:
+                    'Dashboard-level filter values as slug-to-value map. Values must be string, number, or boolean.',
+                  additionalProperties: {
+                    type: ['string', 'number', 'boolean'],
+                  },
+                },
+                row_limit: {
+                  type: 'number',
+                  description:
+                    'Maximum number of rows to return per card (default: 100, max: 500).',
+                  default: 100,
+                  minimum: 1,
+                  maximum: 500,
+                },
+              },
+              required: [],
+            },
+          },
+          {
             name: 'clear_cache',
             description:
               'Clear the internal cache for stored data. Useful for debugging or when you know the data has changed. Supports granular cache clearing for both individual items and list caches.',
@@ -543,6 +587,19 @@ export class MetabaseServer {
         case 'export':
           return safeCall(() =>
             handleExport(
+              request,
+              requestId,
+              this.apiClient,
+              this.logDebug.bind(this),
+              this.logInfo.bind(this),
+              this.logWarn.bind(this),
+              this.logError.bind(this)
+            )
+          );
+
+        case 'execute_dashboard':
+          return safeCall(() =>
+            handleExecuteDashboard(
               request,
               requestId,
               this.apiClient,
