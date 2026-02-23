@@ -1,0 +1,98 @@
+{
+  "success": true,
+  "mode": "discover",
+  "dashboard": {
+    "id": 123,
+    "name": "Revenue Dashboard",
+    "source": "api",
+    "total_dashcards": 4,
+    "executable_dashcards": 3,
+    "skipped_cards": 1
+  },
+  "applied_filters": {
+    "region": "EMEA",
+    "year": 2025
+  },
+  "filter_resolution": {
+    "provided_filter_slugs": ["region", "year"],
+    "matched_filter_slugs": ["region"],
+    "unmatched_filter_slugs": ["year"],
+    "available_dashboard_filters": [
+      {
+        "id": "param-region",
+        "slug": "region",
+        "name": "Region",
+        "type": "category"
+      }
+    ]
+  },
+  "filter_mapping_matrix": [
+    {
+      "filter_slug": "region",
+      "dashboard_parameter_id": "param-region",
+      "dashboard_parameter_name": "Region",
+      "dashboard_parameter_type": "category",
+      "mapped_dashcards": 2,
+      "mapped_cards": 2,
+      "mapped_targets": [
+        {
+          "target_type": "dimension",
+          "parameter_type": "category"
+        }
+      ],
+      "status": "mapped",
+      "issues": []
+    },
+    {
+      "filter_slug": "year",
+      "dashboard_parameter_id": null,
+      "dashboard_parameter_name": null,
+      "dashboard_parameter_type": null,
+      "mapped_dashcards": 0,
+      "mapped_cards": 0,
+      "mapped_targets": [],
+      "status": "blocked",
+      "issues": [
+        {
+          "code": "unknown_filter_slug",
+          "filter_slug": "year",
+          "message": "Provided filter slug \"year\" was not found in dashboard parameters"
+        }
+      ]
+    }
+  ],
+  "dashcards": [
+    {
+      "dashcard_id": 11,
+      "card_id": 886,
+      "card_name": "Revenue by Region",
+      "has_parameter_mappings": true,
+      "mapped_filter_slugs": ["region"],
+      "mapped_filter_count": 1
+    }
+  ],
+  "execution_readiness": {
+    "ready": false,
+    "blocking_issues": [
+      {
+        "code": "unknown_filter_slug",
+        "filter_slug": "year",
+        "message": "Provided filter slug \"year\" was not found in dashboard parameters"
+      }
+    ],
+    "warnings": [],
+    "suggested_filter_payload": {
+      "region": ["EMEA"],
+      "year": 2025
+    }
+  },
+  "skipped": [
+    {
+      "dashcard_id": 19,
+      "card_id": null,
+      "reason": "non-executable dashcard (missing dashcard id or card id)"
+    }
+  ],
+  "usage_guidance": "Use mode=\"execute\" with suggested_filter_payload to run cards after readiness is true.",
+  "retrieved_at": "2026-02-23T12:34:56.000Z"
+}

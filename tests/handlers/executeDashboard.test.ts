@@ -42,9 +42,30 @@ describe('handleExecuteDashboard (execute_dashboard command)', () => {
       );
     });
 
-    it('should throw error when dashboard_url cannot be parsed', async () => {
+    it('should throw error when mode is invalid', async () => {
       const request = createMockRequest('execute_dashboard', {
-        dashboard_url: 'https://metabase.example.com/dashboard/not-a-number',
+        dashboard_id: 1,
+        mode: 'bad-mode',
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      await expect(
+        handleExecuteDashboard(
+          request as any,
+          'test-request-id',
+          mockApiClient as any,
+          logDebug,
+          logInfo,
+          logWarn,
+          logError
+        )
+      ).rejects.toThrow(McpError);
+    });
+
+    it('should throw error when strict_filters is not boolean', async () => {
+      const request = createMockRequest('execute_dashboard', {
+        dashboard_id: 1,
+        strict_filters: 'true',
       });
       const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
 
@@ -65,28 +86,6 @@ describe('handleExecuteDashboard (execute_dashboard command)', () => {
       const request = createMockRequest('execute_dashboard', {
         dashboard_id: 1,
         dashboard_filters: 'invalid',
-      });
-      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
-
-      await expect(
-        handleExecuteDashboard(
-          request as any,
-          'test-request-id',
-          mockApiClient as any,
-          logDebug,
-          logInfo,
-          logWarn,
-          logError
-        )
-      ).rejects.toThrow(McpError);
-    });
-
-    it('should throw error when dashboard filter value type is invalid', async () => {
-      const request = createMockRequest('execute_dashboard', {
-        dashboard_id: 1,
-        dashboard_filters: {
-          region: { invalid: true },
-        },
       });
       const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
 
@@ -126,7 +125,149 @@ describe('handleExecuteDashboard (execute_dashboard command)', () => {
     });
   });
 
-  describe('Dashboard execution flow', () => {
+  describe('Discover mode', () => {
+    it('should return filter mapping readiness without executing cards', async () => {
+      const request = createMockRequest('execute_dashboard', {
+        dashboard_id: 1,
+        mode: 'discover',
+        dashboard_filters: {
+          region: 'EMEA',
+          year: 2025,
+        },
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      mockApiClient.getDashboard.mockResolvedValueOnce(
+        createCachedResponse({
+          id: 1,
+          name: 'Revenue Dashboard',
+          parameters: [
+            {
+              id: 'param-region',
+              slug: 'region',
+              name: 'Region',
+              type: 'category',
+            },
+          ],
+          dashcards: [
+            {
+              id: 10,
+              card_id: 100,
+              card: { name: 'Revenue by Region' },
+              parameter_mappings: [
+                {
+                  parameter_id: 'param-region',
+                  target: ['dimension', ['template-tag', 'region']],
+                },
+              ],
+            },
+          ],
+        })
+      );
+
+      const result = await handleExecuteDashboard(
+        request as any,
+        'test-request-id',
+        mockApiClient as any,
+        logDebug,
+        logInfo,
+        logWarn,
+        logError
+      );
+
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.mode).toBe('discover');
+      expect(responseData.execution_readiness.ready).toBe(false);
+      expect(responseData.execution_readiness.blocking_issues).toHaveLength(1);
+      expect(responseData.execution_readiness.suggested_filter_payload).toEqual({
+        region: ['EMEA'],
+        year: 2025,
+      });
+      expect(responseData.filter_resolution.matched_filter_slugs).toEqual(['region']);
+      expect(responseData.filter_resolution.unmatched_filter_slugs).toEqual(['year']);
+      expect(responseData.filter_mapping_matrix).toHaveLength(2);
+      expect(mockApiClient.request).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Execute mode', () => {
+    it('should fail fast in strict mode when filters are unknown or unmapped', async () => {
+      const request = createMockRequest('execute_dashboard', {
+        dashboard_id: 3,
+        dashboard_filters: {
+          unknown_filter: 'x',
+        },
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      mockApiClient.getDashboard.mockResolvedValueOnce(
+        createCachedResponse({
+          id: 3,
+          name: 'Unknown Filter Dashboard',
+          parameters: [],
+          dashcards: [{ id: 30, card_id: 300, card: { name: 'Card A' }, parameter_mappings: [] }],
+        })
+      );
+
+      await expect(
+        handleExecuteDashboard(
+          request as any,
+          'test-request-id',
+          mockApiClient as any,
+          logDebug,
+          logInfo,
+          logWarn,
+          logError
+        )
+      ).rejects.toThrow('Dashboard filter validation failed');
+
+      expect(mockApiClient.request).not.toHaveBeenCalled();
+    });
+
+    it('should allow best-effort when strict_filters is false', async () => {
+      const request = createMockRequest('execute_dashboard', {
+        dashboard_id: 7,
+        strict_filters: false,
+        dashboard_filters: {
+          unknown_filter: 'x',
+        },
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      mockApiClient.getDashboard.mockResolvedValueOnce(
+        createCachedResponse({
+          id: 7,
+          name: 'Non Strict Dashboard',
+          parameters: [],
+          dashcards: [{ id: 70, card_id: 700, card: { name: 'Card A' }, parameter_mappings: [] }],
+        })
+      );
+
+      mockApiClient.request.mockResolvedValueOnce({
+        data: {
+          rows: [['ok']],
+          cols: [{ name: 'status' }],
+        },
+      });
+
+      const result = await handleExecuteDashboard(
+        request as any,
+        'test-request-id',
+        mockApiClient as any,
+        logDebug,
+        logInfo,
+        logWarn,
+        logError
+      );
+
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.success).toBe(true);
+      expect(responseData.mode).toBe('execute');
+      expect(responseData.strict_filters).toBe(false);
+      expect(responseData.filter_resolution.unmatched_filter_slugs).toEqual(['unknown_filter']);
+      expect(mockApiClient.request).toHaveBeenCalledTimes(1);
+    });
+
     it('should execute dashboard cards with mapped dashboard filters', async () => {
       const request = createMockRequest('execute_dashboard', {
         dashboard_id: 1,
@@ -191,6 +332,7 @@ describe('handleExecuteDashboard (execute_dashboard command)', () => {
 
       const responseData = JSON.parse(result.content[0].text);
       expect(responseData.success).toBe(true);
+      expect(responseData.mode).toBe('execute');
       expect(responseData.dashboard.id).toBe(1);
       expect(responseData.dashboard.executed_cards).toBe(1);
       expect(responseData.dashboard.skipped_cards).toBe(1);
@@ -300,42 +442,6 @@ describe('handleExecuteDashboard (execute_dashboard command)', () => {
       expect(responseData.errors).toHaveLength(1);
       expect(responseData.errors[0].card_id).toBe(201);
       expect(responseData.errors[0].error).toContain('Dashboard card execution failed');
-    });
-
-    it('should include warning for unknown dashboard filter slug', async () => {
-      const request = createMockRequest('execute_dashboard', {
-        dashboard_id: 3,
-        dashboard_filters: {
-          unknown_filter: 'x',
-        },
-      });
-      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
-
-      mockApiClient.getDashboard.mockResolvedValueOnce(
-        createCachedResponse({
-          id: 3,
-          name: 'Unknown Filter Dashboard',
-          parameters: [],
-          dashcards: [],
-        })
-      );
-
-      const result = await handleExecuteDashboard(
-        request as any,
-        'test-request-id',
-        mockApiClient as any,
-        logDebug,
-        logInfo,
-        logWarn,
-        logError
-      );
-
-      const responseData = JSON.parse(result.content[0].text);
-      expect(responseData.warnings).toContain(
-        'Dashboard filter "unknown_filter" was not found in dashboard parameters'
-      );
-      expect(responseData.filter_resolution.matched_filter_slugs).toEqual([]);
-      expect(responseData.filter_resolution.unmatched_filter_slugs).toEqual(['unknown_filter']);
     });
 
     it('should pass through array values for dimension mappings', async () => {

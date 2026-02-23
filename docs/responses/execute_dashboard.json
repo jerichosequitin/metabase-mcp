@@ -1,5 +1,7 @@
 {
   "success": true,
+  "mode": "execute",
+  "strict_filters": true,
   "dashboard": {
     "id": 123,
     "name": "Revenue Dashboard",
@@ -16,17 +18,24 @@
   },
   "filter_resolution": {
     "provided_filter_slugs": ["region", "year"],
-    "matched_filter_slugs": ["region"],
-    "unmatched_filter_slugs": ["year"],
+    "matched_filter_slugs": ["region", "year"],
+    "unmatched_filter_slugs": [],
     "available_dashboard_filters": [
       {
+        "id": "param-region",
         "slug": "region",
         "name": "Region",
         "type": "category"
+      },
+      {
+        "id": "param-year",
+        "slug": "year",
+        "name": "Year",
+        "type": "number"
       }
     ]
   },
-  "warnings": ["Dashcard 12 has no parameter mapping for dashboard filter \"region\""],
+  "warnings": ["Filter \"region\" has 1 invalid parameter mapping target(s)"],
   "skipped": [
     {
       "dashcard_id": 19,

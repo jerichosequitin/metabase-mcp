@@ -16,6 +16,7 @@ import {
   DashboardParameterInfo,
   DashboardCardExecutionError,
   ExecuteDashboardRequest,
+  ExecuteDashboardMode,
   ExecutableDashcard,
   SkippedDashcard,
 } from './types.js';
@@ -24,6 +25,42 @@ import { normalizeCardResponseData } from './normalizers.js';
 
 const DEFAULT_ROW_LIMIT = 100;
 const EXECUTION_CONCURRENCY = 3;
+
+interface FilterIssue {
+  code: 'unknown_filter_slug' | 'unmapped_filter_slug' | 'invalid_target_mapping';
+  filter_slug: string;
+  message: string;
+}
+
+interface FilterMappingEntry {
+  filter_slug: string;
+  dashboard_parameter_id: string | null;
+  dashboard_parameter_name: string | null;
+  dashboard_parameter_type: string | null;
+  mapped_dashcards: number;
+  mapped_cards: number;
+  mapped_targets: Array<{ target_type: string; parameter_type: string }>;
+  status: 'mapped' | 'blocked';
+  issues: FilterIssue[];
+}
+
+interface PreflightInsights {
+  warnings: string[];
+  blockingIssues: FilterIssue[];
+  unmatchedFilterSlugs: string[];
+  matchedFilterSlugs: string[];
+  suggestedFilterPayload: Record<string, DashboardFilterValue>;
+  filterMappingMatrix: FilterMappingEntry[];
+  filterSlugsByDashcardId: Map<number, string[]>;
+  dashcardSummaries: Array<{
+    dashcard_id: number;
+    card_id: number;
+    card_name: string;
+    has_parameter_mappings: boolean;
+    mapped_filter_slugs: string[];
+    mapped_filter_count: number;
+  }>;
+}
 
 function parseDashboardIdFromUrl(urlString: string): number | null {
   try {
@@ -46,6 +83,60 @@ function parseDashboardIdFromUrl(urlString: string): number | null {
   } catch {
     return null;
   }
+}
+
+function isValidMetabaseTarget(target: unknown): target is [string, [string, string]] {
+  if (!Array.isArray(target) || target.length !== 2) {
+    return false;
+  }
+
+  if (typeof target[0] !== 'string') {
+    return false;
+  }
+
+  if (!Array.isArray(target[1]) || target[1].length !== 2) {
+    return false;
+  }
+
+  return typeof target[1][0] === 'string' && typeof target[1][1] === 'string';
+}
+
+function normalizeDashboardMode(
+  rawMode: unknown,
+  requestId: string,
+  logWarn: (message: string, data?: unknown, error?: Error) => void
+): ExecuteDashboardMode {
+  if (rawMode === undefined) {
+    return 'execute';
+  }
+
+  if (rawMode === 'discover' || rawMode === 'execute') {
+    return rawMode;
+  }
+
+  logWarn('Invalid mode parameter for execute_dashboard', { requestId, rawMode });
+  throw new McpError(ErrorCode.InvalidParams, 'mode must be either "discover" or "execute"');
+}
+
+function normalizeStrictFilters(
+  rawStrictFilters: unknown,
+  mode: ExecuteDashboardMode,
+  requestId: string,
+  logWarn: (message: string, data?: unknown, error?: Error) => void
+): boolean {
+  if (rawStrictFilters === undefined) {
+    return mode === 'execute';
+  }
+
+  if (typeof rawStrictFilters !== 'boolean') {
+    logWarn('Invalid strict_filters parameter - must be a boolean', {
+      requestId,
+      rawStrictFilters,
+    });
+    throw new McpError(ErrorCode.InvalidParams, 'strict_filters parameter must be a boolean');
+  }
+
+  return rawStrictFilters;
 }
 
 function normalizeDashboardFilters(
@@ -186,6 +277,169 @@ function categorizeDashcards(dashboard: any): {
   return { executable, skipped };
 }
 
+function buildPreflightInsights(
+  dashboardFilters: Record<string, DashboardFilterValue>,
+  parameterBySlug: Map<string, DashboardParameterInfo>,
+  executableDashcards: ExecutableDashcard[]
+): PreflightInsights {
+  const warnings = new Set<string>();
+  const blockingIssues: FilterIssue[] = [];
+  const unmatchedFilterSlugs: string[] = [];
+  const matchedFilterSlugs = new Set<string>();
+  const suggestedFilterPayload: Record<string, DashboardFilterValue> = { ...dashboardFilters };
+  const filterMappingMatrix: FilterMappingEntry[] = [];
+  const filterSlugsByDashcard = new Map<number, Set<string>>();
+
+  executableDashcards.forEach(card => {
+    filterSlugsByDashcard.set(card.dashcardId, new Set<string>());
+  });
+
+  for (const [slug, value] of Object.entries(dashboardFilters)) {
+    const parameterInfo = parameterBySlug.get(slug);
+    if (!parameterInfo) {
+      const issue: FilterIssue = {
+        code: 'unknown_filter_slug',
+        filter_slug: slug,
+        message: `Provided filter slug "${slug}" was not found in dashboard parameters`,
+      };
+
+      blockingIssues.push(issue);
+      unmatchedFilterSlugs.push(slug);
+      filterMappingMatrix.push({
+        filter_slug: slug,
+        dashboard_parameter_id: null,
+        dashboard_parameter_name: null,
+        dashboard_parameter_type: null,
+        mapped_dashcards: 0,
+        mapped_cards: 0,
+        mapped_targets: [],
+        status: 'blocked',
+        issues: [issue],
+      });
+      continue;
+    }
+
+    const validMappings: Array<{
+      dashcardId: number;
+      cardId: number;
+      target: [string, [string, string]];
+      type: string;
+    }> = [];
+    let invalidMappingCount = 0;
+
+    for (const card of executableDashcards) {
+      const mappingsForParameter = card.parameterMappings.filter(
+        (mapping: any) => String(mapping?.parameter_id ?? '') === parameterInfo.id
+      );
+
+      for (const mapping of mappingsForParameter) {
+        const target = (mapping as any)?.target;
+        if (!isValidMetabaseTarget(target)) {
+          invalidMappingCount += 1;
+          continue;
+        }
+
+        validMappings.push({
+          dashcardId: card.dashcardId,
+          cardId: card.cardId,
+          target,
+          type: parameterInfo.type,
+        });
+        const cardFilters = filterSlugsByDashcard.get(card.dashcardId);
+        cardFilters?.add(slug);
+      }
+    }
+
+    const issues: FilterIssue[] = [];
+
+    if (validMappings.length === 0) {
+      const issue: FilterIssue = {
+        code: invalidMappingCount > 0 ? 'invalid_target_mapping' : 'unmapped_filter_slug',
+        filter_slug: slug,
+        message:
+          invalidMappingCount > 0
+            ? `Filter "${slug}" has mappings, but all mapped targets are invalid`
+            : `Filter "${slug}" is defined on the dashboard but does not map to executable cards`,
+      };
+
+      blockingIssues.push(issue);
+      unmatchedFilterSlugs.push(slug);
+      issues.push(issue);
+    } else {
+      matchedFilterSlugs.add(slug);
+      if (
+        validMappings.some(mapping => mapping.target[0] === 'dimension') &&
+        !Array.isArray(value)
+      ) {
+        suggestedFilterPayload[slug] = [value];
+      }
+    }
+
+    if (invalidMappingCount > 0) {
+      warnings.add(
+        `Filter "${slug}" has ${invalidMappingCount} invalid parameter mapping target(s)`
+      );
+    }
+
+    const uniqueDashcardIds = new Set(validMappings.map(mapping => mapping.dashcardId));
+    const uniqueCardIds = new Set(validMappings.map(mapping => mapping.cardId));
+    const targetKeySet = new Set(
+      validMappings.map(mapping => `${mapping.target[0]}|${mapping.type}`)
+    );
+
+    filterMappingMatrix.push({
+      filter_slug: slug,
+      dashboard_parameter_id: parameterInfo.id,
+      dashboard_parameter_name: parameterInfo.name,
+      dashboard_parameter_type: parameterInfo.type,
+      mapped_dashcards: uniqueDashcardIds.size,
+      mapped_cards: uniqueCardIds.size,
+      mapped_targets: Array.from(targetKeySet).map(key => {
+        const [targetType, parameterType] = key.split('|');
+        return { target_type: targetType, parameter_type: parameterType };
+      }),
+      status: issues.length > 0 ? 'blocked' : 'mapped',
+      issues,
+    });
+  }
+
+  const filterSlugsByDashcardId = new Map<number, string[]>();
+  const dashcardSummaries = executableDashcards.map(card => {
+    const mappedFilterSlugs = Array.from(filterSlugsByDashcard.get(card.dashcardId) || []).sort();
+    filterSlugsByDashcardId.set(card.dashcardId, mappedFilterSlugs);
+
+    return {
+      dashcard_id: card.dashcardId,
+      card_id: card.cardId,
+      card_name: card.cardName,
+      has_parameter_mappings: card.parameterMappings.length > 0,
+      mapped_filter_slugs: mappedFilterSlugs,
+      mapped_filter_count: mappedFilterSlugs.length,
+    };
+  });
+
+  return {
+    warnings: Array.from(warnings),
+    blockingIssues,
+    unmatchedFilterSlugs,
+    matchedFilterSlugs: Array.from(matchedFilterSlugs).sort(),
+    suggestedFilterPayload,
+    filterMappingMatrix,
+    filterSlugsByDashcardId,
+    dashcardSummaries,
+  };
+}
+
+function createStrictFiltersErrorMessage(
+  blockingIssues: FilterIssue[],
+  availableFilterSlugs: string[]
+): string {
+  const issueSummary = blockingIssues.map(issue => `${issue.filter_slug}:${issue.code}`).join(', ');
+  const available = availableFilterSlugs.length > 0 ? availableFilterSlugs.join(', ') : '(none)';
+
+  return `Dashboard filter validation failed (${issueSummary}). Available dashboard filter slugs: ${available}. Run execute_dashboard with mode="discover" to inspect mappings before execution.`;
+}
+
 async function runWithConcurrency<T, R>(
   items: T[],
   concurrency: number,
@@ -229,6 +483,8 @@ export async function handleExecuteDashboard(
 
   const dashboardIdArg = args?.dashboard_id;
   const dashboardUrlArg = args?.dashboard_url;
+  const mode = normalizeDashboardMode(args?.mode, requestId, logWarn);
+  const strictFilters = normalizeStrictFilters(args?.strict_filters, mode, requestId, logWarn);
   const rowLimitArg = args?.row_limit;
   const rowLimit = typeof rowLimitArg === 'number' ? rowLimitArg : DEFAULT_ROW_LIMIT;
   const dashboardFilters = normalizeDashboardFilters(args?.dashboard_filters, requestId, logWarn);
@@ -277,8 +533,9 @@ export async function handleExecuteDashboard(
     dashboardId = parsedDashboardId;
   }
 
-  logDebug(`Executing dashboard ${dashboardId} with row limit: ${rowLimit}`, {
+  logDebug(`Preparing dashboard ${dashboardId} in ${mode} mode with row limit: ${rowLimit}`, {
     filterCount: Object.keys(dashboardFilters).length,
+    strictFilters,
   });
 
   try {
@@ -289,19 +546,78 @@ export async function handleExecuteDashboard(
         ? dashboard.name
         : `dashboard_${dashboardId}`;
 
-    const warnings = new Set<string>();
     const parameterBySlug = extractDashboardParameters(dashboard);
-    const unmatchedFilters: string[] = [];
+    const { executable, skipped } = categorizeDashcards(dashboard);
+    const preflight = buildPreflightInsights(dashboardFilters, parameterBySlug, executable);
 
-    for (const slug of Object.keys(dashboardFilters)) {
-      if (!parameterBySlug.has(slug)) {
-        warnings.add(`Dashboard filter "${slug}" was not found in dashboard parameters`);
-        unmatchedFilters.push(slug);
-      }
+    if (mode === 'discover') {
+      const response = {
+        success: true,
+        mode,
+        dashboard: {
+          id: dashboardId,
+          name: dashboardName,
+          source: dashboardResponse.source,
+          total_dashcards: executable.length + skipped.length,
+          executable_dashcards: executable.length,
+          skipped_cards: skipped.length,
+        },
+        applied_filters: dashboardFilters,
+        filter_resolution: {
+          provided_filter_slugs: Object.keys(dashboardFilters),
+          matched_filter_slugs: preflight.matchedFilterSlugs,
+          unmatched_filter_slugs: preflight.unmatchedFilterSlugs,
+          available_dashboard_filters: Array.from(parameterBySlug.values()).map(param => ({
+            id: param.id,
+            slug: param.slug,
+            name: param.name,
+            type: param.type,
+          })),
+        },
+        filter_mapping_matrix: preflight.filterMappingMatrix,
+        dashcards: preflight.dashcardSummaries,
+        execution_readiness: {
+          ready: preflight.blockingIssues.length === 0,
+          blocking_issues: preflight.blockingIssues,
+          warnings: preflight.warnings,
+          suggested_filter_payload: preflight.suggestedFilterPayload,
+        },
+        skipped,
+        usage_guidance:
+          'Use mode="execute" with suggested_filter_payload to run cards after readiness is true.',
+        retrieved_at: new Date().toISOString(),
+      };
+
+      logInfo(
+        `Dashboard discover complete for ${dashboardId}: ready=${response.execution_readiness.ready}`,
+        { requestId }
+      );
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: formatJson(response),
+          },
+        ],
+      };
     }
 
-    const { executable, skipped } = categorizeDashcards(dashboard);
+    if (strictFilters && preflight.blockingIssues.length > 0) {
+      const availableFilterSlugs = Array.from(parameterBySlug.keys()).sort();
+      const strictErrorMessage = createStrictFiltersErrorMessage(
+        preflight.blockingIssues,
+        availableFilterSlugs
+      );
+      logWarn('execute_dashboard strict filter validation failed', {
+        requestId,
+        dashboardId,
+        blockingIssues: preflight.blockingIssues,
+      });
+      throw new McpError(ErrorCode.InvalidParams, strictErrorMessage);
+    }
 
+    const warnings = new Set<string>(preflight.warnings);
     const errors: DashboardCardExecutionError[] = [];
     const cards: any[] = [];
 
@@ -369,7 +685,7 @@ export async function handleExecuteDashboard(
               row_count: normalized.rowCount,
               original_row_count: normalized.originalRowCount,
               applied_limit: rowLimit,
-              applied_filters: normalizedCardParameters.map(param => param.slug),
+              applied_filters: preflight.filterSlugsByDashcardId.get(card.dashcardId) || [],
               applied_parameter_count: normalizedCardParameters.length,
               data: normalized.data,
             },
@@ -408,6 +724,8 @@ export async function handleExecuteDashboard(
 
     const response = {
       success: true,
+      mode,
+      strict_filters: strictFilters,
       dashboard: {
         id: dashboardId,
         name: dashboardName,
@@ -421,11 +739,10 @@ export async function handleExecuteDashboard(
       applied_filters: dashboardFilters,
       filter_resolution: {
         provided_filter_slugs: Object.keys(dashboardFilters),
-        matched_filter_slugs: Object.keys(dashboardFilters).filter(
-          slug => !unmatchedFilters.includes(slug)
-        ),
-        unmatched_filter_slugs: unmatchedFilters,
+        matched_filter_slugs: preflight.matchedFilterSlugs,
+        unmatched_filter_slugs: preflight.unmatchedFilterSlugs,
         available_dashboard_filters: Array.from(parameterBySlug.values()).map(param => ({
+          id: param.id,
           slug: param.slug,
           name: param.name,
           type: param.type,
@@ -436,7 +753,7 @@ export async function handleExecuteDashboard(
       errors,
       cards,
       usage_guidance:
-        'This response mirrors dashboard-style execution in API context. For very large cards or dashboards, reduce row_limit or run execute/export on specific card IDs.',
+        'For reliable filtering, run mode="discover" first and then execute with suggested_filter_payload.',
       retrieved_at: new Date().toISOString(),
     };
 
@@ -457,7 +774,7 @@ export async function handleExecuteDashboard(
     throw handleApiError(
       error,
       {
-        operation: 'Execute dashboard',
+        operation: mode === 'discover' ? 'Discover dashboard' : 'Execute dashboard',
         resourceType: 'dashboard',
         resourceId: dashboardId,
       },

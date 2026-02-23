@@ -1,11 +1,14 @@
 export type DashboardFilterPrimitive = string | number | boolean;
 export type DashboardFilterValue = DashboardFilterPrimitive | DashboardFilterPrimitive[];
+export type ExecuteDashboardMode = 'discover' | 'execute';
 
 export interface ExecuteDashboardRequest {
   dashboard_id?: number;
   dashboard_url?: string;
   dashboard_filters?: Record<string, DashboardFilterValue>;
   row_limit?: number;
+  mode?: ExecuteDashboardMode;
+  strict_filters?: boolean;
 }
 
 export interface DashboardExecutionResponse {

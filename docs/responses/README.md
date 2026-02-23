@@ -11,6 +11,7 @@ Local reference for Metabase API response structures. Avoids needing to consult 
 - `field.json` - Table fields/columns
 - `table.json` - Database tables
 - `execute_dashboard.json` - Consolidated dashboard execution output with per-card results
+- `execute_dashboard_discover.json` - Preflight discovery output for filter mappings and readiness
 
 ## Usage
 
@@ -25,5 +26,11 @@ Reference these files when modifying optimization functions in `src/handlers/ret
 - Includes `filter_resolution` so callers can quickly see which provided filter slugs matched dashboard params.
 - Includes per-card filter metadata (`applied_filters`, `applied_parameter_count`) for easier debugging.
 - Collapses per-card failures into concise `errors[]` entries instead of returning full raw error payloads.
+
+`execute_dashboard_discover.json` provides a lightweight preflight contract for filter debugging:
+
+- Returns `execution_readiness.ready` and `blocking_issues` without executing cards.
+- Includes `filter_mapping_matrix` and per-dashcard mapping summaries to diagnose filter mismatches.
+- Returns `suggested_filter_payload` (for example, auto-wrapped dimension values as arrays) to reuse in execute mode.
 
 This structure trades some low-level raw API fidelity for significantly more predictable token usage in multi-card dashboard explorations.

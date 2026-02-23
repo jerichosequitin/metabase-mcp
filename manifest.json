@@ -49,7 +49,7 @@
     },
     {
       "name": "execute_dashboard",
-      "description": "Execute all executable cards in a dashboard with optional dashboard-level filters and consolidated per-card results."
+      "description": "Discover dashboard filter mappings or execute all executable cards with optional dashboard-level filters and consolidated per-card results."
     },
     {
       "name": "export",

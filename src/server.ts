@@ -433,7 +433,7 @@ export class MetabaseServer {
           {
             name: 'execute_dashboard',
             description:
-              'Execute all executable cards in a dashboard using dashboard context and optional dashboard-level filter values. Accepts dashboard_id or dashboard_url, maps dashboard filters to card parameters, executes each dashcard, and returns normalized per-card data for discussion.',
+              'Discover dashboard filter mappings or execute all executable cards in a dashboard using dashboard context. Accepts dashboard_id or dashboard_url. Use mode="discover" first to inspect filter readiness, then mode="execute" to run cards.',
             annotations: {
               readOnlyHint: true,
               destructiveHint: false,
@@ -479,6 +479,18 @@ export class MetabaseServer {
                   default: 100,
                   minimum: 1,
                   maximum: 500,
+                },
+                mode: {
+                  type: 'string',
+                  enum: ['discover', 'execute'],
+                  description:
+                    'Operation mode: discover returns filter mappings and readiness without executing cards; execute runs dashboard cards.',
+                  default: 'execute',
+                },
+                strict_filters: {
+                  type: 'boolean',
+                  description:
+                    'When true, execute mode fails before card execution if any provided filter is unknown/unmapped/invalid. Defaults to true in execute mode.',
                 },
               },
               required: [],

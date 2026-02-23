@@ -52,9 +52,6 @@ export function mapDashboardFiltersToCardParameters(
     );
 
     if (mappedTargets.length === 0) {
-      warnings.add(
-        `Dashcard ${dashcardId} has no parameter mapping for dashboard filter "${slug}"`
-      );
       continue;
     }
 
