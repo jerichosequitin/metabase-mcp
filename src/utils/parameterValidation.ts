@@ -6,7 +6,33 @@ export interface MetabaseCardParameter {
   slug: string;
   target: [string, [string, string]];
   type: string;
-  value: string | number | boolean;
+  value: string | number | boolean | Array<string | number | boolean>;
+}
+
+type PrimitiveCardParameterValue = string | number | boolean;
+
+function isPrimitiveCardParameterValue(value: unknown): value is PrimitiveCardParameterValue {
+  const valueType = typeof value;
+  return valueType === 'string' || valueType === 'number' || valueType === 'boolean';
+}
+
+function isDimensionTarget(target: unknown): boolean {
+  return Array.isArray(target) && target[0] === 'dimension';
+}
+
+export function normalizeCardParametersForMetabase(
+  cardParameters: MetabaseCardParameter[]
+): MetabaseCardParameter[] {
+  return cardParameters.map(param => {
+    if (!isDimensionTarget(param.target) || Array.isArray(param.value)) {
+      return param;
+    }
+
+    return {
+      ...param,
+      value: [param.value],
+    };
+  });
 }
 
 export function validateCardParameters(
@@ -108,9 +134,51 @@ export function validateCardParameters(
       );
     }
 
-    // Validate value field (can be string, number, or boolean)
-    const valueType = typeof param.value;
-    if (valueType !== 'string' && valueType !== 'number' && valueType !== 'boolean') {
+    const dimensionTarget = isDimensionTarget(param.target);
+    const value = param.value;
+
+    if (Array.isArray(value)) {
+      if (!dimensionTarget) {
+        logWarn(
+          `Invalid 'value' field in ${paramIndex}: arrays are only allowed for dimension targets`,
+          { requestId, param }
+        );
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `Card parameter at index ${i} has invalid 'value' field: arrays are only allowed for dimension targets`
+        );
+      }
+
+      if (value.length === 0) {
+        logWarn(`Invalid 'value' field in ${paramIndex}: array value cannot be empty`, {
+          requestId,
+          param,
+        });
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `Card parameter at index ${i} has invalid 'value' field: array value cannot be empty`
+        );
+      }
+
+      const hasInvalidArrayItem = value.some(
+        item =>
+          !isPrimitiveCardParameterValue(item) || (typeof item === 'string' && item.trim() === '')
+      );
+      if (hasInvalidArrayItem) {
+        logWarn(
+          `Invalid 'value' field in ${paramIndex}: dimension arrays must contain only non-empty string, number, or boolean values`,
+          { requestId, param }
+        );
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `Card parameter at index ${i} has invalid 'value' field: dimension arrays must contain only non-empty string, number, or boolean values`
+        );
+      }
+
+      continue;
+    }
+
+    if (!isPrimitiveCardParameterValue(value)) {
       logWarn(`Invalid 'value' field in ${paramIndex}: must be string, number, or boolean`, {
         requestId,
         param,
@@ -121,8 +189,7 @@ export function validateCardParameters(
       );
     }
 
-    // Additional validation for string values (not empty)
-    if (valueType === 'string' && (param.value as string).trim() === '') {
+    if (typeof value === 'string' && value.trim() === '') {
       logWarn(`Invalid 'value' field in ${paramIndex}: string value cannot be empty`, {
         requestId,
         param,

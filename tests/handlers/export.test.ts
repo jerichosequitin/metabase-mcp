@@ -463,6 +463,127 @@ describe('handleExport (export command)', () => {
       const responseData = JSON.parse(result.content[0].text);
       expect(responseData.success).toBe(true);
     });
+
+    it('should accept dimension value arrays in card_parameters for export', async () => {
+      const request = createMockRequest('export', {
+        card_id: 1,
+        card_parameters: [
+          {
+            id: 'b86c100e-87cb-09d6-7c33-e58cd2cdbcb2',
+            slug: 'user_id',
+            target: ['dimension', ['template-tag', 'user_id']],
+            type: 'id',
+            value: ['12345', '67890']
+          }
+        ],
+        format: 'csv'
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      mockApiClient.getCard.mockResolvedValueOnce({
+        data: { id: 1, name: 'Test Export Card' },
+        source: 'api',
+        fetchTime: 100
+      });
+
+      const csvData = 'id,name\n1,John';
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        text: () => Promise.resolve(csvData),
+      });
+
+      const result = await handleExport(
+        request,
+        'test-request-id',
+        mockApiClient as any,
+        logDebug,
+        logInfo,
+        logWarn,
+        logError
+      );
+
+      expect(result.content).toHaveLength(1);
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.success).toBe(true);
+    });
+
+    it('should throw error when dimension card parameter has empty value array for export', async () => {
+      const request = createMockRequest('export', {
+        card_id: 1,
+        card_parameters: [
+          {
+            id: 'test-id',
+            slug: 'test-param',
+            target: ['dimension', ['template-tag', 'test-param']],
+            type: 'text',
+            value: []
+          }
+        ],
+        format: 'csv'
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      await expect(
+        handleExport(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        expect.stringContaining('array value cannot be empty'),
+        expect.objectContaining({ requestId: 'test-request-id' })
+      );
+    });
+
+    it('should throw error when non-dimension card parameter has array value for export', async () => {
+      const request = createMockRequest('export', {
+        card_id: 1,
+        card_parameters: [
+          {
+            id: 'test-id',
+            slug: 'test-param',
+            target: ['variable', ['template-tag', 'test-param']],
+            type: 'text',
+            value: ['test-value']
+          }
+        ],
+        format: 'csv'
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      await expect(
+        handleExport(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        expect.stringContaining('arrays are only allowed for dimension targets'),
+        expect.objectContaining({ requestId: 'test-request-id' })
+      );
+    });
+
+    it('should throw error when dimension card parameter array contains invalid items for export', async () => {
+      const request = createMockRequest('export', {
+        card_id: 1,
+        card_parameters: [
+          {
+            id: 'test-id',
+            slug: 'test-param',
+            target: ['dimension', ['template-tag', 'test-param']],
+            type: 'text',
+            value: ['ok', '']
+          }
+        ],
+        format: 'csv'
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      await expect(
+        handleExport(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        expect.stringContaining('dimension arrays must contain only non-empty string, number, or boolean values'),
+        expect.objectContaining({ requestId: 'test-request-id' })
+      );
+    });
   });
 
   describe('Card export mode', () => {
@@ -557,7 +678,7 @@ describe('handleExport (export command)', () => {
                 slug: 'user_id',
                 target: ['dimension', ['template-tag', 'user_id']],
                 type: 'id',
-                value: '42'
+                value: ['42']
               }
             ]
           })

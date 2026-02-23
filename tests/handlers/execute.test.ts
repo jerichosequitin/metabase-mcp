@@ -312,6 +312,119 @@ describe('handleExecute (execute command)', () => {
       expect(responseData.card_id).toBe(1);
     });
 
+    it('should accept dimension value arrays in card_parameters', async () => {
+      const request = createMockRequest('execute', {
+        card_id: 1,
+        card_parameters: [
+          {
+            id: 'b86c100e-87cb-09d6-7c33-e58cd2cdbcb2',
+            slug: 'user_id',
+            target: ['dimension', ['template-tag', 'user_id']],
+            type: 'id',
+            value: ['12345', '67890']
+          }
+        ],
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      mockApiClient.request.mockResolvedValueOnce({
+        data: {
+          rows: [['John', 'Doe']],
+          cols: [{ name: 'first_name' }, { name: 'last_name' }],
+        },
+      });
+
+      const result = await handleExecute(
+        request,
+        'test-request-id',
+        mockApiClient as any,
+        logDebug,
+        logInfo,
+        logWarn,
+        logError
+      );
+
+      expect(result.content).toHaveLength(1);
+      const responseData = JSON.parse(result.content[0].text);
+      expect(responseData.success).toBe(true);
+      expect(responseData.card_id).toBe(1);
+    });
+
+    it('should throw error when dimension card parameter has empty value array', async () => {
+      const request = createMockRequest('execute', {
+        card_id: 1,
+        card_parameters: [
+          {
+            id: 'test-id',
+            slug: 'test-param',
+            target: ['dimension', ['template-tag', 'test-param']],
+            type: 'text',
+            value: []
+          }
+        ]
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      await expect(
+        handleExecute(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        expect.stringContaining('array value cannot be empty'),
+        expect.objectContaining({ requestId: 'test-request-id' })
+      );
+    });
+
+    it('should throw error when non-dimension card parameter has array value', async () => {
+      const request = createMockRequest('execute', {
+        card_id: 1,
+        card_parameters: [
+          {
+            id: 'test-id',
+            slug: 'test-param',
+            target: ['variable', ['template-tag', 'test-param']],
+            type: 'text',
+            value: ['test-value']
+          }
+        ]
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      await expect(
+        handleExecute(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        expect.stringContaining('arrays are only allowed for dimension targets'),
+        expect.objectContaining({ requestId: 'test-request-id' })
+      );
+    });
+
+    it('should throw error when dimension card parameter array contains invalid items', async () => {
+      const request = createMockRequest('execute', {
+        card_id: 1,
+        card_parameters: [
+          {
+            id: 'test-id',
+            slug: 'test-param',
+            target: ['dimension', ['template-tag', 'test-param']],
+            type: 'text',
+            value: ['ok', '']
+          }
+        ]
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      await expect(
+        handleExecute(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow(McpError);
+
+      expect(mockLogger.logWarn).toHaveBeenCalledWith(
+        expect.stringContaining('dimension arrays must contain only non-empty string, number, or boolean values'),
+        expect.objectContaining({ requestId: 'test-request-id' })
+      );
+    });
+
     it('should throw error when card_parameters has empty string values', async () => {
       const request = createMockRequest('execute', {
         card_id: 1,
@@ -556,11 +669,18 @@ describe('handleExecute (execute command)', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/api/card/123/query/json', {
         method: 'POST',
         body: JSON.stringify({
-          parameters: cardParameters,
+          parameters: [
+            {
+              ...cardParameters[0],
+              value: ['9458014662'],
+            }
+          ],
           pivot_results: false,
           format_rows: false,
         }),
       });
+
+      expect(cardParameters[0].value).toBe('9458014662');
 
       expect(result.content).toHaveLength(1);
       expect(result.content[0].type).toBe('text');

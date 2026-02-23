@@ -5,6 +5,7 @@ import {
   analyzeXlsxContent,
   validateMetabaseResponse,
   formatJson,
+  normalizeCardParametersForMetabase,
 } from '../../utils/index.js';
 import { config, authMethod, AuthMethod } from '../../config.js';
 import * as XLSX from 'xlsx';
@@ -96,6 +97,7 @@ export async function exportCard(
   const { cardId, cardParameters, format, filename } = params;
 
   logDebug(`Exporting card ${cardId} in ${format} format`);
+  const normalizedCardParameters = normalizeCardParametersForMetabase(cardParameters);
 
   try {
     // First, fetch the card to get its name for filename purposes
@@ -113,7 +115,8 @@ export async function exportCard(
     const exportEndpoint = `/api/card/${cardId}/query/${format}`;
 
     // Build the request body with parameters if provided
-    const requestBody = cardParameters.length > 0 ? { parameters: cardParameters } : {};
+    const requestBody =
+      normalizedCardParameters.length > 0 ? { parameters: normalizedCardParameters } : {};
 
     // For export endpoints, we need to handle different response types
     const url = new URL(exportEndpoint, config.METABASE_URL);

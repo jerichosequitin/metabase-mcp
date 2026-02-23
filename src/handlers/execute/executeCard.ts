@@ -4,6 +4,7 @@ import {
   validatePositiveInteger,
   validateMetabaseResponse,
   formatJson,
+  normalizeCardParametersForMetabase,
 } from '../../utils/index.js';
 import { CardExecutionParams, ExecutionResponse } from './types.js';
 
@@ -24,9 +25,11 @@ export async function executeCard(
 
   logDebug(`Executing card ID: ${cardId} with row limit: ${rowLimit}`);
 
+  const normalizedCardParameters = normalizeCardParametersForMetabase(cardParameters);
+
   // Build card execution request body
   const cardRequestBody = {
-    parameters: cardParameters,
+    parameters: normalizedCardParameters,
     pivot_results: false,
     format_rows: false,
   };

@@ -24,7 +24,7 @@ You must export this card data to a file. Follow this simplified, reliable proce
 
 1. **Parse filters** (if provided) against the card's available parameters. Convert natural language values to proper formats (dates to ISO format, numbers to integers/floats, text to strings).
 
-2. **Try card export first** using the 'export' tool in card mode with card_id=${cardId} and format="${fileType}". If filters were identified, include them as card_parameters.
+2. **Try card export first** using the 'export' tool in card mode with card_id=${cardId} and format="${fileType}". If filters were identified, include them as card_parameters. For dimension targets, use array values (e.g., \`"value": ["converted-value"]\`).
 
 3. **Use SQL fallback** if card export fails OR returns 0 results:
    - Extract the native SQL query from the card details above

@@ -363,7 +363,7 @@ export class MetabaseServer {
                   type: 'array',
                   items: { type: 'object' },
                   description:
-                    'Parameters for filtering card results (card mode only). Each parameter must follow Metabase format: {id: "uuid", slug: "param_name", target: ["dimension", ["template-tag", "param_name"]], type: "param_type", value: "param_value"}',
+                    'Parameters for filtering card results (card mode only). Each parameter must follow Metabase format: {id: "uuid", slug: "param_name", target: ["dimension", ["template-tag", "param_name"]], type: "param_type", value: ["param_value"]}. For dimension targets, value should be an array; scalar values are accepted and auto-wrapped.',
                 },
                 row_limit: {
                   type: 'number',
@@ -412,7 +412,7 @@ export class MetabaseServer {
                   type: 'array',
                   items: { type: 'object' },
                   description:
-                    'Parameters for filtering card results before export (card mode only). Each parameter must follow Metabase format: {id: "uuid", slug: "param_name", target: ["dimension", ["template-tag", "param_name"]], type: "param_type", value: "param_value"}',
+                    'Parameters for filtering card results before export (card mode only). Each parameter must follow Metabase format: {id: "uuid", slug: "param_name", target: ["dimension", ["template-tag", "param_name"]], type: "param_type", value: ["param_value"]}. For dimension targets, value should be an array; scalar values are accepted and auto-wrapped.',
                 },
                 format: {
                   type: 'string',

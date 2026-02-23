@@ -30,7 +30,7 @@ You must execute this card and return the data. If filter requirements are provi
      "slug": "parameter-slug",
      "target": ["dimension", ["template-tag", "parameter-name"]],
      "type": "parameter-type",
-     "value": "converted-value"
+     "value": ["converted-value"]
    }]
    \`\`\`
    Start with row_limit=100.
