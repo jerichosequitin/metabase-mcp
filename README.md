@@ -121,7 +121,7 @@ Execute SQL queries or run saved cards with configurable row limits (default: 10
 ### `execute_dashboard`
 Execute all executable cards in a dashboard using dashboard context and optional dashboard-level filters.
 - **Input**: `dashboard_id` or `dashboard_url`
-- **Filters**: `dashboard_filters` as slug-to-value map (`string`, `number`, or `boolean`)
+- **Filters**: `dashboard_filters` as slug-to-value map (`string`/`number`/`boolean`, or arrays of those values for multi-select dimensions)
 - **Execution**: Runs each dashcard with dashboard context and returns normalized per-card data
 - **Limits**: `row_limit` per card (default: 100, max: 500)
 - **Behavior**: Best-effort execution (returns per-card errors/skips without failing the full response)

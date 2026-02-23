@@ -102,6 +102,28 @@ describe('handleExecuteDashboard (execute_dashboard command)', () => {
         )
       ).rejects.toThrow(McpError);
     });
+
+    it('should throw error when dashboard filter array contains invalid values', async () => {
+      const request = createMockRequest('execute_dashboard', {
+        dashboard_id: 1,
+        dashboard_filters: {
+          region: ['EMEA', ''],
+        },
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      await expect(
+        handleExecuteDashboard(
+          request as any,
+          'test-request-id',
+          mockApiClient as any,
+          logDebug,
+          logInfo,
+          logWarn,
+          logError
+        )
+      ).rejects.toThrow(McpError);
+    });
   });
 
   describe('Dashboard execution flow', () => {
@@ -175,7 +197,11 @@ describe('handleExecuteDashboard (execute_dashboard command)', () => {
       expect(responseData.cards).toHaveLength(1);
       expect(responseData.cards[0].card_id).toBe(100);
       expect(responseData.cards[0].row_count).toBe(2);
+      expect(responseData.cards[0].applied_parameter_count).toBe(1);
+      expect(responseData.cards[0].applied_filters).toEqual(['region']);
       expect(responseData.skipped[0].reason).toContain('non-executable');
+      expect(responseData.filter_resolution.matched_filter_slugs).toEqual(['region']);
+      expect(responseData.filter_resolution.unmatched_filter_slugs).toEqual([]);
 
       expect(mockApiClient.request).toHaveBeenCalledWith(
         '/api/dashboard/1/dashcard/10/card/100/query',
@@ -188,7 +214,7 @@ describe('handleExecuteDashboard (execute_dashboard command)', () => {
                 slug: 'region',
                 type: 'category',
                 target: ['dimension', ['template-tag', 'region']],
-                value: 'EMEA',
+                value: ['EMEA'],
               },
             ],
             pivot_results: false,
@@ -307,6 +333,82 @@ describe('handleExecuteDashboard (execute_dashboard command)', () => {
       const responseData = JSON.parse(result.content[0].text);
       expect(responseData.warnings).toContain(
         'Dashboard filter "unknown_filter" was not found in dashboard parameters'
+      );
+      expect(responseData.filter_resolution.matched_filter_slugs).toEqual([]);
+      expect(responseData.filter_resolution.unmatched_filter_slugs).toEqual(['unknown_filter']);
+    });
+
+    it('should pass through array values for dimension mappings', async () => {
+      const request = createMockRequest('execute_dashboard', {
+        dashboard_id: 5,
+        dashboard_filters: {
+          facility_name: ['Centro Médico Teknon', 'Clinic B'],
+        },
+      });
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      mockApiClient.getDashboard.mockResolvedValueOnce(
+        createCachedResponse({
+          id: 5,
+          name: 'Facilities Dashboard',
+          parameters: [
+            {
+              id: 'param-facility',
+              slug: 'facility_name',
+              type: 'category',
+            },
+          ],
+          dashcards: [
+            {
+              id: 50,
+              card_id: 500,
+              card: { name: 'Facilities' },
+              parameter_mappings: [
+                {
+                  parameter_id: 'param-facility',
+                  target: ['dimension', ['template-tag', 'facility_name']],
+                },
+              ],
+            },
+          ],
+        })
+      );
+
+      mockApiClient.request.mockResolvedValueOnce({
+        data: {
+          rows: [['Centro Médico Teknon']],
+          cols: [{ name: 'facility_name' }],
+        },
+      });
+
+      await handleExecuteDashboard(
+        request as any,
+        'test-request-id',
+        mockApiClient as any,
+        logDebug,
+        logInfo,
+        logWarn,
+        logError
+      );
+
+      expect(mockApiClient.request).toHaveBeenCalledWith(
+        '/api/dashboard/5/dashcard/50/card/500/query',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            parameters: [
+              {
+                id: 'param-facility',
+                slug: 'facility_name',
+                type: 'category',
+                target: ['dimension', ['template-tag', 'facility_name']],
+                value: ['Centro Médico Teknon', 'Clinic B'],
+              },
+            ],
+            pivot_results: false,
+            format_rows: false,
+          }),
+        })
       );
     });
 

@@ -7,6 +7,8 @@ import {
   validateRowLimit,
   validateMetabaseResponse,
   formatJson,
+  normalizeCardParametersForMetabase,
+  validateCardParameters,
 } from '../../utils/index.js';
 import {
   DashboardExecutionResponse,
@@ -71,15 +73,53 @@ function normalizeDashboardFilters(
     }
 
     const valueType = typeof value;
-    if (valueType !== 'string' && valueType !== 'number' && valueType !== 'boolean') {
-      logWarn('Invalid dashboard filter value type', { requestId, slug, valueType });
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `dashboard_filters["${slug}"] must be a string, number, or boolean`
-      );
+    const isPrimitive = valueType === 'string' || valueType === 'number' || valueType === 'boolean';
+
+    if (isPrimitive) {
+      if (valueType === 'string' && (value as string).trim() === '') {
+        logWarn('Invalid dashboard filter value - string cannot be empty', { requestId, slug });
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `dashboard_filters["${slug}"] cannot be an empty string`
+        );
+      }
+      normalized[slug] = value as DashboardFilterValue;
+      continue;
     }
 
-    normalized[slug] = value as DashboardFilterValue;
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        logWarn('Invalid dashboard filter value - array cannot be empty', { requestId, slug });
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `dashboard_filters["${slug}"] cannot be an empty array`
+        );
+      }
+
+      const hasInvalidArrayItem = value.some(item => {
+        const itemType = typeof item;
+        const primitiveItem =
+          itemType === 'string' || itemType === 'number' || itemType === 'boolean';
+        return !primitiveItem || (itemType === 'string' && item.trim() === '');
+      });
+
+      if (hasInvalidArrayItem) {
+        logWarn('Invalid dashboard filter array value type', { requestId, slug });
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `dashboard_filters["${slug}"] must contain only non-empty string, number, or boolean values`
+        );
+      }
+
+      normalized[slug] = value as DashboardFilterValue;
+      continue;
+    }
+
+    logWarn('Invalid dashboard filter value type', { requestId, slug, valueType });
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      `dashboard_filters["${slug}"] must be a string, number, boolean, or array of those values`
+    );
   }
 
   return normalized;
@@ -95,6 +135,10 @@ function extractDashboardParameters(dashboard: any): Map<string, DashboardParame
         id: String(param.id),
         slug: String(param.slug),
         type: typeof param.type === 'string' ? param.type : 'text',
+        name:
+          typeof param.name === 'string' && param.name.trim() !== ''
+            ? param.name
+            : String(param.slug),
       });
     }
   });
@@ -247,10 +291,12 @@ export async function handleExecuteDashboard(
 
     const warnings = new Set<string>();
     const parameterBySlug = extractDashboardParameters(dashboard);
+    const unmatchedFilters: string[] = [];
 
     for (const slug of Object.keys(dashboardFilters)) {
       if (!parameterBySlug.has(slug)) {
         warnings.add(`Dashboard filter "${slug}" was not found in dashboard parameters`);
+        unmatchedFilters.push(slug);
       }
     }
 
@@ -271,9 +317,28 @@ export async function handleExecuteDashboard(
         );
 
         mappingResult.warnings.forEach(warning => warnings.add(warning));
+        const normalizedCardParameters = normalizeCardParametersForMetabase(
+          mappingResult.cardParameters
+        );
+
+        if (normalizedCardParameters.length > 0) {
+          try {
+            validateCardParameters(normalizedCardParameters, requestId, logWarn);
+          } catch (error: any) {
+            return {
+              status: 'error' as const,
+              error: {
+                dashcard_id: card.dashcardId,
+                card_id: card.cardId,
+                card_name: card.cardName,
+                error: `Invalid mapped dashboard filters for card: ${error?.message || 'unknown validation error'}`,
+              },
+            };
+          }
+        }
 
         const requestBody = {
-          parameters: mappingResult.cardParameters,
+          parameters: normalizedCardParameters,
           pivot_results: false,
           format_rows: false,
         };
@@ -304,6 +369,8 @@ export async function handleExecuteDashboard(
               row_count: normalized.rowCount,
               original_row_count: normalized.originalRowCount,
               applied_limit: rowLimit,
+              applied_filters: normalizedCardParameters.map(param => param.slug),
+              applied_parameter_count: normalizedCardParameters.length,
               data: normalized.data,
             },
           };
@@ -352,6 +419,18 @@ export async function handleExecuteDashboard(
         skipped_cards: skipped.length,
       },
       applied_filters: dashboardFilters,
+      filter_resolution: {
+        provided_filter_slugs: Object.keys(dashboardFilters),
+        matched_filter_slugs: Object.keys(dashboardFilters).filter(
+          slug => !unmatchedFilters.includes(slug)
+        ),
+        unmatched_filter_slugs: unmatchedFilters,
+        available_dashboard_filters: Array.from(parameterBySlug.values()).map(param => ({
+          slug: param.slug,
+          name: param.name,
+          type: param.type,
+        })),
+      },
       warnings: Array.from(warnings),
       skipped,
       errors,

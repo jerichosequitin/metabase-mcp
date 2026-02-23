@@ -456,9 +456,20 @@ export class MetabaseServer {
                 dashboard_filters: {
                   type: 'object',
                   description:
-                    'Dashboard-level filter values as slug-to-value map. Values must be string, number, or boolean.',
+                    'Dashboard-level filter values as slug-to-value map. Values may be string, number, boolean, or arrays of those values.',
                   additionalProperties: {
-                    type: ['string', 'number', 'boolean'],
+                    anyOf: [
+                      { type: 'string' },
+                      { type: 'number' },
+                      { type: 'boolean' },
+                      {
+                        type: 'array',
+                        items: {
+                          type: ['string', 'number', 'boolean'],
+                        },
+                        minItems: 1,
+                      },
+                    ],
                   },
                 },
                 row_limit: {

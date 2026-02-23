@@ -14,6 +14,18 @@
     "region": "EMEA",
     "year": 2025
   },
+  "filter_resolution": {
+    "provided_filter_slugs": ["region", "year"],
+    "matched_filter_slugs": ["region"],
+    "unmatched_filter_slugs": ["year"],
+    "available_dashboard_filters": [
+      {
+        "slug": "region",
+        "name": "Region",
+        "type": "category"
+      }
+    ]
+  },
   "warnings": ["Dashcard 12 has no parameter mapping for dashboard filter \"region\""],
   "skipped": [
     {
@@ -39,6 +51,8 @@
       "row_count": 100,
       "original_row_count": 145,
       "applied_limit": 100,
+      "applied_filters": ["region"],
+      "applied_parameter_count": 1,
       "data": {
         "data": {
           "rows": [["EMEA", 120034.5]],

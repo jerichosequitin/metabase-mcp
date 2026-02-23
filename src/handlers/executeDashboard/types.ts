@@ -1,4 +1,5 @@
-export type DashboardFilterValue = string | number | boolean;
+export type DashboardFilterPrimitive = string | number | boolean;
+export type DashboardFilterValue = DashboardFilterPrimitive | DashboardFilterPrimitive[];
 
 export interface ExecuteDashboardRequest {
   dashboard_id?: number;
@@ -18,6 +19,7 @@ export interface DashboardParameterInfo {
   id: string;
   slug: string;
   type: string;
+  name: string;
 }
 
 export interface ExecutableDashcard {
