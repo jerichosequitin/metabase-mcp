@@ -3,6 +3,7 @@ import {
   handleApiError,
   sanitizeFilename,
   analyzeXlsxContent,
+  isValidExportPath,
   validateMetabaseResponse,
   formatJson,
   normalizeCardParametersForMetabase,
@@ -259,6 +260,22 @@ export async function exportCard(
 
     // Use configured export directory
     const exportDirectory = config.EXPORT_DIRECTORY;
+    if (!isValidExportPath(exportDirectory)) {
+      logWarn('Invalid export directory configured', { requestId, exportDirectory });
+      return {
+        content: [
+          {
+            type: 'text',
+            text: formatJson({
+              success: false,
+              error:
+                'Invalid export directory. Please configure a safe export path within your home directory.',
+            }),
+          },
+        ],
+        isError: true,
+      };
+    }
     const savedFilePath = path.join(exportDirectory, finalFilename);
 
     let fileSaveError: string | undefined;
