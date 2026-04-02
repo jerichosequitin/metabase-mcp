@@ -1,5 +1,5 @@
 {
-  "name": "@groccaim/metabase-mcp",
+  "name": "groccamb-mcp",
   "version": "1.1.5",
   "description": "A high-performance MCP server for Metabase analytics integration with response optimization and robust error handling",
   "type": "module",
@@ -75,7 +75,8 @@
     "url": "https://github.com/groccaIM/metabase-mcp/issues"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   },
   "license": "MIT",
   "engines": {
