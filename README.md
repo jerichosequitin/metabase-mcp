@@ -29,7 +29,7 @@ A high-performance Model Context Protocol server for AI integration with Metabas
 
 ### Option 1: Claude Desktop
 
-Install directly from the [Claude Desktop Directory](https://claude.ai/directory/ant.dir.gh.jerichosequitin.metabase), or:
+Install directly from the [Claude Desktop Directory](https://claude.ai/directory/connectors/ant.dir.gh.jerichosequitin.metabase), or:
 
 1. Download `metabase-mcp.mcpb` from [Releases](https://github.com/jerichosequitin/metabase-mcp/releases)
 2. Open the `.mcpb` file with Claude Desktop to install
