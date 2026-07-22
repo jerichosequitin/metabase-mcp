@@ -458,5 +458,17 @@ describe('handleList', () => {
         handleList(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
       ).rejects.toThrow('limit must be a number');
     });
+
+    it('should reject partially numeric pagination strings', async () => {
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+      const request = createMockRequest('list', {
+        model: 'cards',
+        offset: '12px',
+      });
+
+      await expect(
+        handleList(request, 'test-request-id', mockApiClient as any, logDebug, logInfo, logWarn, logError)
+      ).rejects.toThrow('offset must be a number');
+    });
   });
 });
