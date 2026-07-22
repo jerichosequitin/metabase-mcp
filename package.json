@@ -1,6 +1,6 @@
 {
   "name": "@jerichosequitin/metabase-mcp",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "A high-performance MCP server for Metabase analytics integration with response optimization and robust error handling",
   "type": "module",
   "author": {

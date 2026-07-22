@@ -5,7 +5,7 @@ FROM node:lts-alpine
 
 LABEL maintainer="Jericho Sequitin <https://github.com/jerichosequitin>"
 LABEL description="High-performance MCP server for Metabase with response optimization and robust error handling"
-LABEL version="1.1.6"
+LABEL version="1.1.7"
 
 # Set working directory
 WORKDIR /usr/src/app
