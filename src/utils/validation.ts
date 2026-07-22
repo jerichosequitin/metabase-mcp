@@ -4,6 +4,8 @@
 
 import { ErrorCode, McpError } from '../types/core.js';
 
+const INTEGER_STRING_PATTERN = /^-?\d+$/;
+
 /**
  * Validate positive integer with detailed error message
  */
@@ -41,11 +43,12 @@ export function parseAndValidatePositiveInteger(
   // Try to coerce to number if it's a string
   let numValue: number;
   if (typeof value === 'string') {
-    numValue = parseInt(value, 10);
-    if (isNaN(numValue)) {
+    const normalizedValue = value.trim();
+    if (!INTEGER_STRING_PATTERN.test(normalizedValue)) {
       logWarn(`Invalid ${fieldName} parameter - cannot parse as number`, { requestId, value });
       throw new McpError(ErrorCode.InvalidParams, `${fieldName} must be a number`);
     }
+    numValue = Number(normalizedValue);
   } else if (typeof value === 'number') {
     numValue = value;
   } else {
@@ -78,11 +81,12 @@ export function parseAndValidateNonNegativeInteger(
   // Try to coerce to number if it's a string
   let numValue: number;
   if (typeof value === 'string') {
-    numValue = parseInt(value, 10);
-    if (isNaN(numValue)) {
+    const normalizedValue = value.trim();
+    if (!INTEGER_STRING_PATTERN.test(normalizedValue)) {
       logWarn(`Invalid ${fieldName} parameter - cannot parse as number`, { requestId, value });
       throw new McpError(ErrorCode.InvalidParams, `${fieldName} must be a number`);
     }
+    numValue = Number(normalizedValue);
   } else if (typeof value === 'number') {
     numValue = value;
   } else {

@@ -3,6 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
 const VERSION = '1.1.6';
 import {
+  CallToolRequest,
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
   CallToolRequestSchema,
@@ -13,7 +14,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { LogLevel } from './config.js';
 import { isLogLevelEnabled } from './utils/logging.js';
-import { generateRequestId } from './utils/index.js';
+import { generateRequestId, normalizeToolArguments } from './utils/index.js';
 // Note: ApiError and isMcpError removed - errors are caught and returned, not type-checked
 import { MetabaseApiClient } from './api.js';
 import {
@@ -491,10 +492,10 @@ export class MetabaseServer {
       // Helper to wrap handler calls and convert errors to tool results
       // Handles both sync and async handlers
       const safeCall = async <T>(
-        handler: () => T | Promise<T>
+        handler: (normalizedRequest: CallToolRequest) => T | Promise<T>
       ): Promise<T | { content: { type: string; text: string }[]; isError: true }> => {
         try {
-          return await handler();
+          return await handler(normalizeToolArguments(request));
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           this.logError(`Tool execution failed: ${errorMessage}`, error);
@@ -507,9 +508,9 @@ export class MetabaseServer {
 
       switch (request.params?.name) {
         case 'search':
-          return safeCall(() =>
+          return safeCall(normalizedRequest =>
             handleSearch(
-              request,
+              normalizedRequest,
               requestId,
               this.apiClient,
               this.logDebug.bind(this),
@@ -520,9 +521,9 @@ export class MetabaseServer {
           );
 
         case 'list':
-          return safeCall(() =>
+          return safeCall(normalizedRequest =>
             handleList(
-              request,
+              normalizedRequest,
               requestId,
               this.apiClient,
               this.logDebug.bind(this),
@@ -533,9 +534,9 @@ export class MetabaseServer {
           );
 
         case 'execute':
-          return safeCall(() =>
+          return safeCall(normalizedRequest =>
             handleExecute(
-              request,
+              normalizedRequest,
               requestId,
               this.apiClient,
               this.logDebug.bind(this),
@@ -546,9 +547,9 @@ export class MetabaseServer {
           );
 
         case 'export':
-          return safeCall(() =>
+          return safeCall(normalizedRequest =>
             handleExport(
-              request,
+              normalizedRequest,
               requestId,
               this.apiClient,
               this.logDebug.bind(this),
@@ -559,9 +560,9 @@ export class MetabaseServer {
           );
 
         case 'clear_cache':
-          return safeCall(() =>
+          return safeCall(normalizedRequest =>
             handleClearCache(
-              request,
+              normalizedRequest,
               this.apiClient,
               this.logInfo.bind(this),
               this.logWarn.bind(this),
@@ -570,9 +571,9 @@ export class MetabaseServer {
           );
 
         case 'retrieve':
-          return safeCall(() =>
+          return safeCall(normalizedRequest =>
             handleRetrieve(
-              request,
+              normalizedRequest,
               requestId,
               this.apiClient,
               this.logDebug.bind(this),

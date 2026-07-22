@@ -32,7 +32,7 @@ export async function handleExecute(
   const nativeParameters = Array.isArray(args?.native_parameters) ? args.native_parameters : [];
   const cardParameters = Array.isArray(args?.card_parameters) ? args.card_parameters : [];
   const rowLimitArg = args?.row_limit;
-  const rowLimit = typeof rowLimitArg === 'number' ? rowLimitArg : 100;
+  const rowLimit = rowLimitArg ?? 100;
 
   // First validate that parameter types are correct
   if (cardId !== undefined && typeof cardId !== 'number') {

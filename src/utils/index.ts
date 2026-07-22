@@ -17,5 +17,8 @@ export * from './fileUtils.js';
 // Request utilities
 export * from './requestUtils.js';
 
+// Tool argument normalization
+export * from './toolArguments.js';
+
 // JSON formatting
 export * from './jsonFormatting.js';
