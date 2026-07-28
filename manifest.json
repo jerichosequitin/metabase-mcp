@@ -19,9 +19,7 @@
     "entry_point": "build/src/index.js",
     "mcp_config": {
       "command": "node",
-      "args": [
-        "${__dirname}/build/src/index.js"
-      ],
+      "args": ["${__dirname}/build/src/index.js"],
       "env": {
         "METABASE_URL": "${user_config.metabase_url}",
         "METABASE_API_KEY": "${user_config.metabase_api_key}",
@@ -48,6 +46,10 @@
     {
       "name": "execute",
       "description": "Execute SQL queries or run saved cards against Metabase databases. Warning: Can execute destructive SQL operations."
+    },
+    {
+      "name": "execute_dashboard",
+      "description": "Discover dashboard filter mappings or execute all executable cards with optional dashboard-level filters and consolidated per-card results."
     },
     {
       "name": "export",

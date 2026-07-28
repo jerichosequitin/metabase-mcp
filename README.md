@@ -20,7 +20,7 @@ A high-performance Model Context Protocol server for AI integration with Metabas
 - **Response Optimization**: Up to 90% token reduction for efficient AI context usage
 - **Robust Error Handling**: Comprehensive error handling with structured, actionable responses
 - **Smart Caching**: Multi-layer caching with configurable TTL for improved performance
-- **Unified Commands**: `list`, `retrieve`, `search`, `execute`, and `export` tools
+- **Unified Commands**: `list`, `retrieve`, `search`, `execute`, `execute_dashboard`, and `export` tools
 - **Dual Authentication**: API key or email/password authentication
 - **Large Data Export**: Export up to 1M rows in CSV, JSON, and XLSX formats
 - **Read-Only Mode**: Enabled by default to restrict execute to SELECT queries only
@@ -118,6 +118,18 @@ Execute SQL queries or run saved cards with configurable row limits (default: 10
 - **SQL Mode**: Custom queries with `database_id` and `query`
 - **Card Mode**: Saved cards with `card_id` and optional `card_parameters` for filtering
 - **Security**: Respects Read-Only Mode (blocks INSERT, UPDATE, DELETE, DROP, etc.)
+
+### `execute_dashboard`
+Discover dashboard filter mappings or execute all executable cards in a dashboard using dashboard context.
+- **Input**: `dashboard_id` or `dashboard_url`
+- **Mode**: `mode="discover"` (recommended first) or `mode="execute"` (default)
+- **Filters**: `dashboard_filters` as slug-to-value map (`string`/`number`/`boolean`, or arrays of those values for multi-select dimensions)
+- **URL Query Support**: If `dashboard_filters` is omitted, query params from `dashboard_url` are used as filter inputs
+- **Discover**: Returns `execution_readiness`, `filter_mapping_matrix`, and `suggested_filter_payload` without executing cards
+- **Execution**: Runs each dashcard with dashboard context and returns normalized per-card data
+- **Strictness**: `strict_filters` (default true in execute mode) fails fast when provided filters are unknown or unmapped
+- **Limits**: `row_limit` per card (default: 100, max: 500)
+- **Behavior**: After filter validation passes, execution is best-effort (returns per-card errors/skips without failing the full response)
 
 ### `export`
 Export large datasets up to 1M rows to the configured export directory.

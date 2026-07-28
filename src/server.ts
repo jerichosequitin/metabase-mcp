@@ -20,6 +20,7 @@ import { MetabaseApiClient } from './api.js';
 import {
   handleList,
   handleExecute,
+  handleExecuteDashboard,
   handleExport,
   handleSearch,
   handleClearCache,
@@ -436,6 +437,72 @@ export class MetabaseServer {
             },
           },
           {
+            name: 'execute_dashboard',
+            description:
+              'Discover dashboard filter mappings or execute all executable cards in a dashboard using dashboard context. Accepts dashboard_id or dashboard_url. Use mode="discover" first to inspect filter readiness, then mode="execute" to run cards.',
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              idempotentHint: false,
+              openWorldHint: true,
+            },
+            inputSchema: {
+              type: 'object',
+              properties: {
+                dashboard_id: {
+                  type: 'number',
+                  description:
+                    'Dashboard ID to execute. Provide this OR dashboard_url. If both are provided, dashboard_id takes precedence.',
+                },
+                dashboard_url: {
+                  type: 'string',
+                  description:
+                    'Metabase dashboard URL containing a numeric dashboard ID (for example: https://metabase.example.com/dashboard/123-my-dashboard). If dashboard_filters is omitted, query-string filters in the URL are used.',
+                },
+                dashboard_filters: {
+                  type: 'object',
+                  description:
+                    'Dashboard-level filter values as slug-to-value map. Values may be string, number, boolean, or arrays of those values.',
+                  additionalProperties: {
+                    anyOf: [
+                      { type: 'string' },
+                      { type: 'number' },
+                      { type: 'boolean' },
+                      {
+                        type: 'array',
+                        items: {
+                          type: ['string', 'number', 'boolean'],
+                        },
+                        minItems: 1,
+                      },
+                    ],
+                  },
+                },
+                row_limit: {
+                  type: 'number',
+                  description:
+                    'Maximum number of rows to return per card (default: 100, max: 500).',
+                  default: 100,
+                  minimum: 1,
+                  maximum: 500,
+                },
+                mode: {
+                  type: 'string',
+                  enum: ['discover', 'execute'],
+                  description:
+                    'Operation mode: discover returns filter mappings and readiness without executing cards; execute runs dashboard cards.',
+                  default: 'execute',
+                },
+                strict_filters: {
+                  type: 'boolean',
+                  description:
+                    'When true, execute mode fails before card execution if any provided filter is unknown/unmapped/invalid. Defaults to true in execute mode.',
+                },
+              },
+              required: [],
+            },
+          },
+          {
             name: 'clear_cache',
             description:
               'Clear the internal cache for stored data. Useful for debugging or when you know the data has changed. Supports granular cache clearing for both individual items and list caches.',
@@ -550,6 +617,19 @@ export class MetabaseServer {
           return safeCall(normalizedRequest =>
             handleExport(
               normalizedRequest,
+              requestId,
+              this.apiClient,
+              this.logDebug.bind(this),
+              this.logInfo.bind(this),
+              this.logWarn.bind(this),
+              this.logError.bind(this)
+            )
+          );
+
+        case 'execute_dashboard':
+          return safeCall(() =>
+            handleExecuteDashboard(
+              request,
               requestId,
               this.apiClient,
               this.logDebug.bind(this),

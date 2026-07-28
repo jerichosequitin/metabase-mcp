@@ -4,7 +4,7 @@ import { validateNonEmptyString } from './validation.js';
 export interface MetabaseCardParameter {
   id: string;
   slug: string;
-  target: [string, [string, string]];
+  target: unknown;
   type: string;
   value: string | number | boolean | Array<string | number | boolean>;
 }
