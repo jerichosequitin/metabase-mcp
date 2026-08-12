@@ -1,4 +1,4 @@
-import { CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
+import type { CallToolRequest } from '@modelcontextprotocol/server';
 import { MetabaseApiClient } from '../api.js';
 import { handleApiError, validateEnumValue, formatJson } from '../utils/index.js';
 

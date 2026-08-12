@@ -39,13 +39,14 @@
     "mcpb:validate": "echo 'MCPB validation - checking manifest structure' && node -e \"const fs = require('fs'); const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8')); console.log('Manifest valid:', manifest.name, manifest.version);\""
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.23.0",
+    "@modelcontextprotocol/server": "^2.0.0",
     "@types/xlsx": "^0.0.35",
     "dotenv": "^16.3.1",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-    "zod": "^3.25.0"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
     "@types/node": "^20.17.22",
     "@vitest/coverage-v8": "^4.0.15",
     "concurrently": "^8.2.2",
@@ -77,6 +78,6 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

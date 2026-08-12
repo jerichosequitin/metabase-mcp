@@ -1,7 +1,7 @@
-import {
+import type {
   ListPromptsRequest as SdkListPromptsRequest,
   GetPromptRequest as SdkGetPromptRequest,
-} from '@modelcontextprotocol/sdk/types.js';
+} from '@modelcontextprotocol/server';
 
 // Type definitions for prompt handlers (re-exported from SDK)
 export type ListPromptsRequest = SdkListPromptsRequest;

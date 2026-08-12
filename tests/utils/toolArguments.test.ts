@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
+import type { CallToolRequest } from '@modelcontextprotocol/server';
 import { normalizeToolArguments } from '../../src/utils/toolArguments.js';
 
 function createRequest(name: string, args: Record<string, unknown>): CallToolRequest {

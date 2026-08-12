@@ -1,4 +1,4 @@
-import { CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
+import type { CallToolRequest } from '@modelcontextprotocol/server';
 import { ErrorCode, McpError } from '../types/core.js';
 
 interface NumericArgumentConfig {
