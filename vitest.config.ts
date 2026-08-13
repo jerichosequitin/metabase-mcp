@@ -31,6 +31,6 @@ export default defineConfig({
     exclude: ['node_modules/**', 'build/**', 'dist/**'],
   },
   esbuild: {
-    target: 'node18',
+    target: 'node20',
   },
 });

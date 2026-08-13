@@ -1,4 +1,4 @@
-import { CallToolRequest } from '@modelcontextprotocol/sdk/types.js';
+import type { CallToolRequest } from '@modelcontextprotocol/server';
 import { MetabaseApiClient } from '../api.js';
 import { ErrorCode, McpError } from '../types/core.js';
 import { ValidationErrorFactory } from '../utils/errorFactory.js';
@@ -8,6 +8,7 @@ import {
   validateEnumValue,
   formatJson,
 } from '../utils/index.js';
+import { SEARCH_MODELS } from './searchModels.js';
 
 export async function handleSearch(
   request: CallToolRequest,
@@ -48,9 +49,8 @@ export async function handleSearch(
 
   // Validate models parameter with case insensitive handling
   if (models && models.length > 0) {
-    const supportedModels = ['card', 'dashboard', 'table', 'database', 'collection'] as const;
     models.forEach((model, index) => {
-      validateEnumValue(model, supportedModels, `models[${index}]`, requestId, logWarn);
+      validateEnumValue(model, SEARCH_MODELS, `models[${index}]`, requestId, logWarn);
     });
   }
 
@@ -118,28 +118,6 @@ export async function handleSearch(
     throw new McpError(
       ErrorCode.InvalidParams,
       'database model cannot be combined with other model types - search for databases separately'
-    );
-  }
-
-  // Validate model types
-  const validModels = [
-    'card',
-    'dashboard',
-    'table',
-    'dataset',
-    'segment',
-    'collection',
-    'database',
-    'action',
-    'indexed-entity',
-    'metric',
-  ];
-  const invalidModels = models.filter(model => !validModels.includes(model));
-  if (invalidModels.length > 0) {
-    logWarn(`Invalid model types specified: ${invalidModels.join(', ')}`, { requestId });
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      `Invalid model types: ${invalidModels.join(', ')}. Valid types are: ${validModels.join(', ')}`
     );
   }
 

@@ -3,7 +3,7 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jerichosequitin/metabase-mcp)
 [![npm version](https://img.shields.io/npm/v/@jerichosequitin/metabase-mcp)](https://www.npmjs.com/package/@jerichosequitin/metabase-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-brightgreen?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20.0.0-brightgreen?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![GitHub stars](https://img.shields.io/github/stars/jerichosequitin/metabase-mcp)](https://github.com/jerichosequitin/metabase-mcp/stargazers)
 
@@ -20,6 +20,7 @@ A high-performance Model Context Protocol server for AI integration with Metabas
 - **Response Optimization**: Up to 90% token reduction for efficient AI context usage
 - **Robust Error Handling**: Comprehensive error handling with structured, actionable responses
 - **Smart Caching**: Multi-layer caching with configurable TTL for improved performance
+- **Modern MCP Support**: MCP `2026-07-28` discovery and cache hints with legacy client compatibility
 - **Unified Commands**: `list`, `retrieve`, `search`, `execute`, and `export` tools
 - **Dual Authentication**: API key or email/password authentication
 - **Large Data Export**: Export up to 1M rows in CSV, JSON, and XLSX formats
@@ -133,7 +134,7 @@ Clear internal cache with granular control.
 ## For Developers
 
 ### Prerequisites
-- Node.js 18.0.0 or higher
+- Node.js 20.0.0 or higher
 - Active Metabase instance
 
 ### Setup

@@ -1,18 +1,15 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { Server } from '@modelcontextprotocol/server';
+import { serveStdio, type StdioServerHandle } from '@modelcontextprotocol/server/stdio';
 
 const VERSION = '1.1.7';
-import {
+import type {
   CallToolRequest,
-  ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
-  CallToolRequestSchema,
-  ListResourceTemplatesRequestSchema,
-  ListToolsRequestSchema,
-  ListPromptsRequestSchema,
-  GetPromptRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
-import { LogLevel } from './config.js';
+  CallToolResult,
+  GetPromptResult,
+  ReadResourceResult,
+  Tool,
+} from '@modelcontextprotocol/server';
+import { config, LogLevel } from './config.js';
 import { isLogLevelEnabled } from './utils/logging.js';
 import { generateRequestId, normalizeToolArguments } from './utils/index.js';
 // Note: ApiError and isMcpError removed - errors are caught and returned, not type-checked
@@ -31,6 +28,7 @@ import {
   handleReadResource,
 } from './handlers/resources/index.js';
 import { handleListPrompts, handleGetPrompt } from './handlers/prompts/index.js';
+import { SEARCH_MODELS } from './handlers/searchModels.js';
 
 export class MetabaseServer {
   private server: Server;
@@ -48,6 +46,16 @@ export class MetabaseServer {
           tools: {},
           prompts: {},
         },
+        instructions:
+          'Use search to find Metabase content, retrieve for details, list for compact inventories, execute for query results, and export for large datasets.',
+        cacheHints: {
+          'server/discover': { ttlMs: 86_400_000, cacheScope: 'public' },
+          'tools/list': { ttlMs: 86_400_000, cacheScope: 'public' },
+          'prompts/list': { ttlMs: 86_400_000, cacheScope: 'public' },
+          'resources/templates/list': { ttlMs: 86_400_000, cacheScope: 'public' },
+          'resources/list': { ttlMs: config.CACHE_TTL_MS, cacheScope: 'private' },
+          'resources/read': { ttlMs: config.CACHE_TTL_MS, cacheScope: 'private' },
+        },
       }
     );
 
@@ -61,12 +69,10 @@ export class MetabaseServer {
     this.server.onerror = (error: Error) => {
       this.logError('Unexpected server error occurred', error);
     };
+  }
 
-    process.on('SIGINT', async () => {
-      this.logInfo('Gracefully shutting down server');
-      await this.server.close();
-      process.exit(0);
-    });
+  getProtocolServer(): Server {
+    return this.server;
   }
 
   // Enhanced logging utilities
@@ -128,16 +134,11 @@ export class MetabaseServer {
     this.log(LogLevel.ERROR, message, undefined, errorObj);
   }
 
-  private logFatal(message: string, error: unknown) {
-    const errorObj = error instanceof Error ? error : new Error(String(error));
-    this.log(LogLevel.FATAL, message, undefined, errorObj);
-  }
-
   /**
    * Set up resource handlers
    */
   private setupResourceHandlers() {
-    this.server.setRequestHandler(ListResourcesRequestSchema, async request => {
+    this.server.setRequestHandler('resources/list', async request => {
       return handleListResources(
         request,
         this.apiClient,
@@ -146,19 +147,19 @@ export class MetabaseServer {
       );
     });
 
-    this.server.setRequestHandler(ListResourceTemplatesRequestSchema, async request => {
+    this.server.setRequestHandler('resources/templates/list', async request => {
       return handleListResourceTemplates(request, this.logInfo.bind(this));
     });
 
-    this.server.setRequestHandler(ReadResourceRequestSchema, async request => {
-      return handleReadResource(
+    this.server.setRequestHandler('resources/read', async request => {
+      return (await handleReadResource(
         request,
         this.apiClient,
         this.logInfo.bind(this),
         this.logWarn.bind(this),
         this.logDebug.bind(this),
         this.logError.bind(this)
-      );
+      )) as ReadResourceResult;
     });
   }
 
@@ -166,7 +167,7 @@ export class MetabaseServer {
    * Set up tool handlers
    */
   private setupToolHandlers() {
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+    this.server.setRequestHandler('tools/list', async () => {
       this.logInfo('Processing request to list available tools');
       return {
         tools: [
@@ -191,18 +192,7 @@ export class MetabaseServer {
                   type: 'array',
                   items: {
                     type: 'string',
-                    enum: [
-                      'card',
-                      'dashboard',
-                      'table',
-                      'dataset',
-                      'segment',
-                      'collection',
-                      'database',
-                      'action',
-                      'indexed-entity',
-                      'metric',
-                    ],
+                    enum: SEARCH_MODELS,
                   },
                   description:
                     'Model types to search (default: ["card", "dashboard"]). RESTRICTION: "database" model cannot be mixed with others and must be used exclusively.',
@@ -474,11 +464,11 @@ export class MetabaseServer {
               required: [],
             },
           },
-        ],
+        ] as Tool[],
       };
     });
 
-    this.server.setRequestHandler(CallToolRequestSchema, async request => {
+    this.server.setRequestHandler('tools/call', async request => {
       const toolName = request.params?.name || 'unknown';
       const requestId = generateRequestId();
 
@@ -491,11 +481,11 @@ export class MetabaseServer {
 
       // Helper to wrap handler calls and convert errors to tool results
       // Handles both sync and async handlers
-      const safeCall = async <T>(
-        handler: (normalizedRequest: CallToolRequest) => T | Promise<T>
-      ): Promise<T | { content: { type: string; text: string }[]; isError: true }> => {
+      const safeCall = async (
+        handler: (normalizedRequest: CallToolRequest) => unknown | Promise<unknown>
+      ): Promise<CallToolResult> => {
         try {
-          return await handler(normalizeToolArguments(request));
+          return (await handler(normalizeToolArguments(request))) as CallToolResult;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           this.logError(`Tool execution failed: ${errorMessage}`, error);
@@ -599,30 +589,44 @@ export class MetabaseServer {
    * Set up prompt handlers
    */
   private setupPromptHandlers() {
-    this.server.setRequestHandler(ListPromptsRequestSchema, async request => {
+    this.server.setRequestHandler('prompts/list', async request => {
       return handleListPrompts(request, this.logInfo.bind(this));
     });
 
-    this.server.setRequestHandler(GetPromptRequestSchema, async request => {
-      return handleGetPrompt(
+    this.server.setRequestHandler('prompts/get', async request => {
+      return (await handleGetPrompt(
         request,
         this.apiClient,
         this.logInfo.bind(this),
         this.logWarn.bind(this),
         this.logError.bind(this)
-      );
+      )) as GetPromptResult;
     });
   }
+}
 
-  async run() {
-    try {
-      this.logInfo('Starting Metabase MCP server');
-      const transport = new StdioServerTransport();
-      await this.server.connect(transport);
-      this.logInfo('Metabase MCP server successfully connected and running on stdio transport');
-    } catch (error) {
-      this.logFatal('Failed to start Metabase MCP server', error);
-      throw error;
-    }
-  }
+export function createMetabaseProtocolServer(): Server {
+  return new MetabaseServer().getProtocolServer();
+}
+
+export function serveMetabaseStdio(): StdioServerHandle {
+  const handle = serveStdio(createMetabaseProtocolServer, {
+    legacy: 'serve',
+    onerror: error => {
+      console.error(
+        JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: 'error',
+          message: 'Unexpected stdio server error occurred',
+          error: error.message,
+        })
+      );
+    },
+  });
+
+  process.once('SIGINT', () => {
+    void handle.close().finally(() => process.exit(0));
+  });
+
+  return handle;
 }

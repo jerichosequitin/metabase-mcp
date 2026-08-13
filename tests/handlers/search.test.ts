@@ -165,6 +165,24 @@ describe('handleSearch', () => {
       expect(result.content[0].text).toContain('Test Dashboard');
     });
 
+    it('should support every model advertised by the tool schema', async () => {
+      mockApiClient.request.mockResolvedValue([]);
+      const [logDebug, logInfo, logWarn, logError] = getLoggerFunctions();
+
+      const request = createMockRequest('search', { query: 'test', models: ['dataset'] });
+      await handleSearch(
+        request,
+        'test-request-id',
+        mockApiClient as any,
+        logDebug,
+        logInfo,
+        logWarn,
+        logError
+      );
+
+      expect(mockApiClient.request).toHaveBeenCalledWith('/api/search?q=test&models=dataset');
+    });
+
     it('should successfully search with ids parameter', async () => {
       const searchResults = [sampleCard];
       mockApiClient.request.mockResolvedValue(searchResults);

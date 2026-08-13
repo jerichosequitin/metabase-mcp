@@ -1,8 +1,8 @@
-import {
+import type {
   ListResourcesRequest as SdkListResourcesRequest,
   ReadResourceRequest as SdkReadResourceRequest,
   ListResourceTemplatesRequest as SdkListResourceTemplatesRequest,
-} from '@modelcontextprotocol/sdk/types.js';
+} from '@modelcontextprotocol/server';
 
 // Type definitions for resource handlers (re-exported from SDK)
 export type ListResourcesRequest = SdkListResourcesRequest;
@@ -18,12 +18,19 @@ export interface ResourceTemplate {
 }
 
 // Resource content definition
-export interface ResourceContent {
-  uri: string;
-  mimeType: string;
-  text?: string;
-  blob?: string;
-}
+export type ResourceContent =
+  | {
+      uri: string;
+      mimeType: string;
+      text: string;
+      blob?: never;
+    }
+  | {
+      uri: string;
+      mimeType: string;
+      blob: string;
+      text?: never;
+    };
 
 // Resource definition
 export interface Resource {
