@@ -5,6 +5,7 @@ export interface ExecuteRequest {
   native_parameters?: any[];
   card_parameters?: any[];
   row_limit?: number;
+  collection?: string;
 }
 
 export interface SqlExecutionParams {
@@ -12,6 +13,7 @@ export interface SqlExecutionParams {
   query: string;
   nativeParameters: any[];
   rowLimit: number;
+  collection?: string;
 }
 
 export interface CardExecutionParams {

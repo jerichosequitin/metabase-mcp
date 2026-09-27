@@ -154,7 +154,7 @@ export async function handleExecute(
     );
   }
 
-  // If executing a SQL query
+  // If executing a SQL query (or Mongo native query when collection is provided)
   if (!query || typeof query !== 'string') {
     logWarn('Missing or invalid query parameter in execute request', { requestId });
     throw new McpError(
@@ -177,6 +177,7 @@ export async function handleExecute(
     query,
     nativeParameters,
     rowLimit,
+    collection: args?.collection,
   };
 
   return await executeSqlQuery(

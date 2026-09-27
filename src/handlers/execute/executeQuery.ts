@@ -55,14 +55,17 @@ export async function executeSqlQuery(
   logWarn: (message: string, data?: unknown, error?: Error) => void,
   logError: (message: string, error: unknown) => void
 ): Promise<ExecutionResponse> {
-  const { databaseId, query, nativeParameters, rowLimit } = params;
+  const { databaseId, query, nativeParameters, rowLimit, collection } = params;
 
   // Validate positive integer parameters
   validatePositiveInteger(databaseId, 'database_id', requestId, logWarn);
   validatePositiveInteger(rowLimit, 'row_limit', requestId, logWarn);
 
-  // Check read-only mode restriction
-  if (config.METABASE_READ_ONLY_MODE && !isReadOnlyQuery(query)) {
+  // Mongo native query: when a collection is provided, the query is a JSON
+  // aggregation pipeline (e.g. [{$match: {...}}]) and must be sent as an array
+  // in native.query with the collection name. SQL read-only check is skipped.
+  const isMongo = !!collection;
+  if (!isMongo && config.METABASE_READ_ONLY_MODE && !isReadOnlyQuery(query)) {
     logWarn('Write operation blocked by read-only mode', {
       requestId,
       query: query.substring(0, 100),
@@ -73,57 +76,83 @@ export async function executeSqlQuery(
     );
   }
 
-  logDebug(`Executing SQL query against database ID: ${databaseId} with row limit: ${rowLimit}`);
+  logDebug(
+    `Executing ${isMongo ? 'Mongo' : 'SQL'} query against database ID: ${databaseId} with row limit: ${rowLimit}`
+  );
 
-  // Handle LIMIT clause: only override if our limit is more restrictive than existing limit
-  let limitedQuery = query.trim();
   let finalLimit = rowLimit;
-  let shouldAddLimit = false;
+  let nativePayload: {
+    query: unknown;
+    collection?: string;
+    template_tags?: Record<string, unknown>;
+  };
 
-  // Look for existing LIMIT clause at the end of the query (most common case)
-  // This regex properly handles LIMIT with optional OFFSET and accounts for trailing semicolons/whitespace
-  const limitRegex = /\bLIMIT\s+(\d+)(?:\s+OFFSET\s+\d+)?\s*;?\s*$/i;
-  const limitMatch = limitedQuery.match(limitRegex);
+  if (isMongo) {
+    // Parse the Mongo pipeline (JSON array). If it fails, send as string.
+    let parsedQuery: unknown;
+    try {
+      parsedQuery = JSON.parse(query.trim());
+    } catch {
+      parsedQuery = query.trim();
+    }
+    nativePayload = {
+      query: parsedQuery,
+      collection,
+      template_tags: {},
+    };
+  } else {
+    // Handle LIMIT clause: only override if our limit is more restrictive than existing limit
+    let limitedQuery = query.trim();
+    let shouldAddLimit = false;
 
-  if (limitMatch) {
-    const existingLimit = parseInt(limitMatch[1], 10);
-    logDebug(`Found existing LIMIT clause: ${existingLimit}, requested limit: ${rowLimit}`);
+    // Look for existing LIMIT clause at the end of the query (most common case)
+    // This regex properly handles LIMIT with optional OFFSET and accounts for trailing semicolons/whitespace
+    const limitRegex = /\bLIMIT\s+(\d+)(?:\s+OFFSET\s+\d+)?\s*;?\s*$/i;
+    const limitMatch = limitedQuery.match(limitRegex);
 
-    if (existingLimit <= rowLimit) {
-      // Existing limit is more restrictive or equal, keep it
-      logDebug(
-        `Keeping existing LIMIT ${existingLimit} as it's more restrictive than or equal to requested ${rowLimit}`
-      );
-      finalLimit = existingLimit;
-      // Don't modify the query
+    if (limitMatch) {
+      const existingLimit = parseInt(limitMatch[1], 10);
+      logDebug(`Found existing LIMIT clause: ${existingLimit}, requested limit: ${rowLimit}`);
+
+      if (existingLimit <= rowLimit) {
+        // Existing limit is more restrictive or equal, keep it
+        logDebug(
+          `Keeping existing LIMIT ${existingLimit} as it's more restrictive than or equal to requested ${rowLimit}`
+        );
+        finalLimit = existingLimit;
+        // Don't modify the query
+      } else {
+        // Our limit is more restrictive, replace the existing LIMIT clause
+        logDebug(
+          `Replacing existing LIMIT ${existingLimit} with more restrictive limit ${rowLimit}`
+        );
+        limitedQuery = limitedQuery.replace(limitRegex, '').trim();
+        shouldAddLimit = true;
+      }
     } else {
-      // Our limit is more restrictive, replace the existing LIMIT clause
-      logDebug(`Replacing existing LIMIT ${existingLimit} with more restrictive limit ${rowLimit}`);
-      limitedQuery = limitedQuery.replace(limitRegex, '').trim();
+      // No LIMIT clause found at the end, add ours
+      logDebug(`No existing LIMIT clause found, adding limit ${rowLimit}`);
       shouldAddLimit = true;
     }
-  } else {
-    // No LIMIT clause found at the end, add ours
-    logDebug(`No existing LIMIT clause found, adding limit ${rowLimit}`);
-    shouldAddLimit = true;
-  }
 
-  // Add LIMIT clause if needed
-  if (shouldAddLimit) {
-    if (limitedQuery.endsWith(';')) {
-      limitedQuery = limitedQuery.slice(0, -1) + ` LIMIT ${rowLimit};`;
-    } else {
-      limitedQuery = limitedQuery + ` LIMIT ${rowLimit}`;
+    // Add LIMIT clause if needed
+    if (shouldAddLimit) {
+      if (limitedQuery.endsWith(';')) {
+        limitedQuery = limitedQuery.slice(0, -1) + ` LIMIT ${rowLimit};`;
+      } else {
+        limitedQuery = limitedQuery + ` LIMIT ${rowLimit}`;
+      }
     }
+    nativePayload = {
+      query: limitedQuery,
+      template_tags: {},
+    };
   }
 
   // Build query request body
   const queryData = {
     type: 'native',
-    native: {
-      query: limitedQuery,
-      template_tags: {},
-    },
+    native: nativePayload,
     parameters: nativeParameters,
     database: databaseId,
   };

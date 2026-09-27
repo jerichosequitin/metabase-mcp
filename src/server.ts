@@ -342,7 +342,13 @@ export class MetabaseServer {
                 },
                 query: {
                   type: 'string',
-                  description: 'SQL query to execute (SQL mode only)',
+                  description:
+                    'SQL query to execute (SQL mode only). For Mongo databases, pass the JSON aggregation pipeline (e.g. [{$match: {...}}]) together with the collection parameter.',
+                },
+                collection: {
+                  type: 'string',
+                  description:
+                    'Mongo collection name. When provided, the query is treated as a Mongo native query (JSON pipeline) instead of SQL. Required for Mongo databases (e.g. consolidatedUnits, eruDebt in receivable_unit - Mongodb).',
                 },
                 card_id: {
                   type: 'number',
